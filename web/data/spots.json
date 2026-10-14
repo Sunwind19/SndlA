@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Start point",
+    "latitude": 37.7135843,
+    "longitude": -119.5860043,
+    "desc": "Beginning of the trail"
+  },
+  {
+    "name": "Midpoint",
+    "latitude": 37.718008,
+    "longitude": -119.5829567,
+    "desc": "Bedrocks coming up!"
+  },
+  {
+    "name": "Summit",
+    "latitude": 37.7217284,
+    "longitude": -119.5832382,
+    "desc": "Enjoy the amazing 360-degre view!"
+  },
+  {
+    "name": "Yosemite Valley",
+    "latitude": 37.74293688722077,
+    "longitude": -119.59076755999496,
+    "desc": "A famous glacier-carved canyon located in the heart of Yosemite, where park reveals its most iconic landscape: Enjoy granite cliffs, and towering waterfalls. "
+  },
+  {
+    "name": "Half Dome",
+    "latitude": 37.74830891395653,
+    "longitude": -119.53425022012959,
+    "desc": "Rising nearly 5,000 feet above Yosemite Valley and 8,800 feet above sea level, Half Dome is a true icon of Yosemite. Look at the amazing shape of this granite dome, literally 'cut in half'."
+  },
+  {
+    "name": "El Capitan",
+    "latitude": 37.73404591946521,
+    "longitude": -119.63786322779265,
+    "desc": "This iconic granite formation, rising over 3,000 feet above the meadow, is a small universe of Yosemite. At night, climbers headlamps are the stars, and El Capitan shines like the moon."
+  },
+  {
+    "name": "The Historic Jeffrey Pine",
+    "latitude": 37.723100,
+    "longitude":  -119.584400,
+    "desc": "This gnarled mountaintop veteran were immortalized by Ansel Adams and countless other shutterbugs. Its bleached wood, though, remains a stirring sight—and an amazing meditation on the passage of time!"
+  },
+  {
+    "name": "Yosemite Falls",
+    "latitude": 37.759679286167426,
+    "longitude":  -119.59550876781267,
+    "desc": "This is true diamond in Yosemite Valley -- the tallest waterfall in entire North America rising 2,425 feet."
+  }
+]

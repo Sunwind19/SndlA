@@ -19,6 +19,7 @@
             maxZoom: 19,
             attribution: "© OpenStreetMap contributors"
         }).addTo(map);
+
         async function loadTrail() {
             const res = await fetch("data/trail.json");
             const trail = await res.json();
@@ -27,6 +28,18 @@
             map.fitBounds(line.getBounds());
         }
         loadTrail();
+        
+        async function loadSpots(){
+            const response = await fetch("data/spots.json")
+            const spots = await response.json();
+
+            spots.forEach(function (spot) {
+                L.marker([spot.latitude, spot.longitude])
+                .addTo(map)
+                .bindPopup("<b>" + spot.name + "</b><br>" + spot.desc);
+            });
+        }
+        loadSpots();
      </script>
 </body>
 </html>
