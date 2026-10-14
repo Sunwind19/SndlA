@@ -20,12 +20,21 @@
             attribution: "© OpenStreetMap contributors"
         }).addTo(map);
 
+        let trailPoints = [];
+
         async function loadTrail() {
             const res = await fetch("/api/trail");
             const trail = await res.json();
-            console.log(trail);
+            trailPoints = trail.points;
             const line = L.polyline(trail.points, { color: "#43a047", weight: 5 }).addTo(map);
             map.fitBounds(line.getBounds());
+
+            if (SIM){
+                startSim();
+            } 
+            else{
+                startGPS();
+            }
         }
         loadTrail();
         
@@ -71,7 +80,27 @@
                 { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
             );
         }
-        startGPS();
+
+        const SIM = new URLSearchParams(location.search).get("sim") === "1";
+        let simIndex = 0;
+        let simPaused = false;
+        function startSim() {
+            setInterval(function () {
+                if (simPaused) return;
+                if (simIndex >= trailPoints.length) return;
+                
+                const p = trailPoints[simIndex];
+                onPosition(p[0], p[1]);
+                simIndex++;
+            }, 1000);
+
+            document.addEventListener("keydown", function (e) {
+                if (e.code === "Space") {
+                    simPaused = !simPaused;
+                    console.log(simPaused ? "Resting" : "Walking");
+                }
+            });
+        }
      </script>
 </body>
 </html>
