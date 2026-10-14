@@ -40,6 +40,38 @@
             });
         }
         loadSpots();
+
+        let myLocation = null;
+
+        function onPosition(latitude, longitude){
+            if (myLocation == null){
+                myLocation = L.circleMarker([latitude, longitude],{
+                    radius: 8, color: "#0dfcd0", fillOpacity:1 
+                }).addTo(map);
+            }
+            else{
+                myLocation.setLatLng([latitude, longitude]);
+            }
+        }
+
+        function startGPS(){
+            if(!("geolocation" in navigator)){
+                alert("This browser does not support GPS")
+                return;
+            }
+            navigator.geolocation.watchPosition(
+                function(position){
+                    const crds = position.coords
+                    console.log(crds.latitude, crds.longitude, "Accuracy(m):", crds.accuracy, "Speed:", crds.speed);
+                    onPosition(crds.latitude, crds.longitude);
+                },
+                function (err){
+                    console.log("GPS error", err.code, err.message);
+                },
+                { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+            );
+        }
+        startGPS();
      </script>
 </body>
 </html>
