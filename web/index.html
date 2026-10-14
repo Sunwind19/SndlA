@@ -21,7 +21,7 @@
         }).addTo(map);
 
         async function loadTrail() {
-            const res = await fetch("data/trail.json");
+            const res = await fetch("/api/trail");
             const trail = await res.json();
             console.log(trail);
             const line = L.polyline(trail.points, { color: "#43a047", weight: 5 }).addTo(map);
@@ -30,7 +30,7 @@
         loadTrail();
         
         async function loadSpots(){
-            const response = await fetch("data/spots.json")
+            const response = await fetch("/api/spots")
             const spots = await response.json();
 
             spots.forEach(function (spot) {
