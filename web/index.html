@@ -26,17 +26,10 @@
             const res = await fetch("/api/trail");
             const trail = await res.json();
             trailPoints = trail.points;
+            buildCum();
             const line = L.polyline(trail.points, { color: "#43a047", weight: 5 }).addTo(map);
             map.fitBounds(line.getBounds());
-
-            if (SIM){
-                startSim();
-            } 
-            else{
-                startGPS();
-            }
         }
-        loadTrail();
         
         async function loadSpots(){
             const response = await fetch("/api/spots")
@@ -47,8 +40,15 @@
                 .addTo(map)
                 .bindPopup("<b>" + spot.name + "</b><br>" + spot.desc);
             });
+            trailSpots = spots
+                .filter(function (s) { return s.type === "trail"; })
+                .map(function (s) {
+                    s.idx = nearestIndex(s.latitude, s.longitude).index;
+                    return s;
+                })
+                .sort(function (a, b) { return a.idx - b.idx; });
+            console.log(trailSpots.map(function (s) { return s.name + " → " + s.idx; }));
         }
-        loadSpots();
 
         let myLocation = null;
 
@@ -61,6 +61,7 @@
             else{
                 myLocation.setLatLng([latitude, longitude]);
             }
+            updateGuide(latitude, longitude);
         }
 
         function startGPS(){
@@ -100,6 +101,70 @@
                     console.log(simPaused ? "Resting" : "Walking");
                 }
             });
+        }
+
+        function distanceM(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const toRad = function (deg) { return deg * Math.PI / 180; };
+        
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(a));
+        }
+        
+        async function init(){
+            await loadTrail();
+            await loadSpots();
+            if(SIM){
+                startSim();
+            }
+            else{
+                startGPS();
+            }
+        }
+        init();
+
+        let trailSpots = [];
+        let cum = [];
+
+        function buildCum(){
+            cum = [0];
+            for (let i = 1; i < trailPoints.length; i++) {
+                const a = trailPoints[i - 1];
+                const b = trailPoints[i];
+                cum.push(cum[i - 1] + distanceM(a[0], a[1], b[0], b[1]));
+            }
+        }
+        function updateGuide(latitude, longitude){
+            if (trailPoints.length === 0 || trailSpots.length === 0) return;
+            const me = nearestIndex(latitude, longitude);
+            if (me.dist > 500) {
+                console.log("To far from trail");
+                return;
+            }
+            const next = trailSpots.find(function (s) { return s.idx > me.index; });
+            if (!next) {
+                console.log("You've been through every spot!");
+                return;
+            }
+            const remain = Math.round(cum[next.idx] - cum[me.index]);
+            console.log("next:", next.name, remain + " m");
+        } 
+
+        function nearestIndex(latitude, longitude) {
+            let bestIdx = 0;
+            let bestDist = Infinity;
+
+            for (let i = 0; i < trailPoints.length; i++) {
+                const d = distanceM(latitude, longitude, trailPoints[i][0], trailPoints[i][1]);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestIdx = i;
+                }
+            }
+            return { index: bestIdx, dist: bestDist };
         }
      </script>
 </body>
