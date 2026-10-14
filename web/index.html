@@ -19,6 +19,14 @@
             maxZoom: 19,
             attribution: "© OpenStreetMap contributors"
         }).addTo(map);
+        async function loadTrail() {
+            const res = await fetch("data/trail.json");
+            const trail = await res.json();
+            console.log(trail);
+            const line = L.polyline(trail.points, { color: "#43a047", weight: 5 }).addTo(map);
+            map.fitBounds(line.getBounds());
+        }
+        loadTrail();
      </script>
 </body>
 </html>
