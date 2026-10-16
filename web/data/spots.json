@@ -25,7 +25,8 @@
     "type":"trail",
     "latitude": 37.7217284,
     "longitude": -119.5832382,
-    "desc": "Enjoy the amazing 360-degre view!"
+    "desc": "Enjoy the amazing 360-degre view!",
+    "photo": "/img/summit.jpg"
   },
   {
     "name": "Yosemite Valley",

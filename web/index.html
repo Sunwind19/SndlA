@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SndlA</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- UI / UX -->
     <style>
         body {margin: 0;}
         #map { height: 100vh; height: 100dvh; }
@@ -23,17 +25,18 @@
 
         .topCard { display: flex; justify-content: space-between; align-items: center; }
         #cardDistance { color: #9e9e9e; font-size: 16px; }
-        #cardName { font-size: 26px; margin-top: 4px; }
+        #cardName { font-size: 26px; margin-top: 4px; margin-bottom: 4px; }
         #cardNote { font-size: 26px; margin-top:4px; }
         #cardPhoto { width: 84px; height: 84px; border-radius: 24px; object-fit: cover; display: none; }
 
         .pill{ padding: 8px 16px; border-radius: 20px; font-size: 14px; }
         .pill.green { background: #43a047; color: #fff;}
+        .pill.black { background: #000; color: #fff;}
 
         .sunsetTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #fbe38e; color: #b08d2a; }
-        .trailTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #000; color: #fff;
-}
+        .trailTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #000; color: #fff; }
     </style>
+
 </head>
 <body>
      <div id="map"></div>
@@ -44,7 +47,7 @@
      <div id = "card">
         <div class = "topCard">
             <div>
-                <div id = "cardDistance">--m</div>
+                <div id = "cardDistance">--m</div> 
                 <div id = "cardName">Looking for the trail...</div>
                 <div id = "cardNote"></div>
             </div>
@@ -219,12 +222,14 @@
                 if (arrivedSpots.includes(spot.name)) return;
                 if (spot.idx <= mySpot.index) return;   
                 const distance = distanceM(latitude, longitude, spot.latitude, spot.longitude);
+                //Informing the spots coming up that has type "trail" in spots.json
                 if (distance < approachM) {
                     arrivedSpots.push(spot.name);
                     console.log("Coming up: " + spot.name + " (" + Math.round(distance) + " m) - " + spot.desc);
                     }
                 });
-
+            
+            //Informing spots that has type "view", where user can see it from Summit
             const views = viewsHere(latitude, longitude);
             if (views.length > 0) {
                 const baseName = views[0].visibleFrom;
@@ -246,10 +251,11 @@
                 return;
             }
             const remain = Math.round(cum[next.idx] - cum[mySpot.index]);
-            console.log("next:", next.name, remain + " m");
+            updateCard(next,remain)
             //console.log("Debug:", next.idx, mySpot.index, cum.length, cum[next.idx], cum[mySpot.index]);
         } 
 
+        //function for direction & nearest spots
         function directionDeg(lat1, lon1, lat2, lon2){
             const toRad = function (d) { return d * Math.PI / 180; };
             const toDeg = function (r) { return r * 180 / Math.PI; };
@@ -277,6 +283,23 @@
                 }
             }
             return { index: bestIdx, dist: bestDist };
+        }
+
+        function formatDist(m) {
+            return m >= 1000 ? (m / 1000).toFixed(1) + "km": m + "m";
+        }
+        function updateCard(spot, remain){
+            document.getElementById("cardDistance".textContent = formatDist(remain))
+            document.getElementById("cardName").textContent = spot.name
+
+            const photo = document.getElementById("cardPhoto");
+            if (spot.photo){
+                photo.src = spot.photo;
+                photo.style.display = "block";
+            }
+            else{
+                photo.style.display = "none";
+            }
         }
      </script>
 </body>
