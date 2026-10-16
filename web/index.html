@@ -20,8 +20,18 @@
             attribution: "© OpenStreetMap contributors"
         }).addTo(map);
 
-        let trailPoints = [];
 
+        //Declaring variables
+        let trailPoints = [];
+        let myLocation = null;
+        let trailSpots = [];
+        let cum = [];
+        let arrivedSpots = [];
+        let shownViewsFor = null;.
+
+        const approachM = 100;
+        
+        //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
         async function loadTrail() {
             const res = await fetch("/api/trail");
             const trail = await res.json();
@@ -31,6 +41,7 @@
             map.fitBounds(line.getBounds());
         }
         
+        //Loading spots - viewpoints, landmarks, etc. from spots.json.
         async function loadSpots(){
             const response = await fetch("/api/spots")
             const spots = await response.json();
@@ -40,6 +51,9 @@
                 .addTo(map)
                 .bindPopup("<b>" + spot.name + "</b><br>" + spot.desc);
             });
+            viewSpots = spots.filter(function (s) { return s.type === "view"; });
+            console.log("view spot number:", viewSpots.length, viewSpots);
+            console.log(viewSpots.map(function (v) { return v.name + " → [" + v.visibleFrom + "]"; }));
             trailSpots = spots
                 .filter(function (s) { return s.type === "trail"; })
                 .map(function (s) {
@@ -50,8 +64,15 @@
             console.log(trailSpots.map(function (s) { return s.name + " → " + s.idx; }));
         }
 
-        let myLocation = null;
+        //Views when user arrives to the summit
+        function viewsHere(latitude, longitude) {
+            return viewSpots.filter(function (v) {
+                const base = trailSpots.find(function (t) { return t.name === v.visibleFrom; });
+                return base && distanceM(latitude, longitude, base.latitude, base.longitude) < 100;
+            });
+        }
 
+        //Display my position as cyan marker for real-time guidance. 
         function onPosition(latitude, longitude){
             if (myLocation == null){
                 myLocation = L.circleMarker([latitude, longitude],{
@@ -64,6 +85,8 @@
             updateGuide(latitude, longitude);
         }
 
+
+        //Checking users GPS info
         function startGPS(){
             if(!("geolocation" in navigator)){
                 alert("This browser does not support GPS")
@@ -82,6 +105,7 @@
             );
         }
 
+        //Simulator to test out program
         const SIM = new URLSearchParams(location.search).get("sim") === "1";
         let simIndex = 0;
         let simPaused = false;
@@ -103,6 +127,7 @@
             });
         }
 
+        //Distance info
         function distanceM(lat1, lon1, lat2, lon2) {
             const R = 6371000;
             const toRad = function (deg) { return deg * Math.PI / 180; };
@@ -114,6 +139,7 @@
             return 2 * R * Math.asin(Math.sqrt(a));
         }
         
+        //Calling out function
         async function init(){
             await loadTrail();
             await loadSpots();
@@ -126,9 +152,6 @@
         }
         init();
 
-        let trailSpots = [];
-        let cum = [];
-
         function buildCum(){
             cum = [0];
             for (let i = 1; i < trailPoints.length; i++) {
@@ -137,21 +160,66 @@
                 cum.push(cum[i - 1] + distanceM(a[0], a[1], b[0], b[1]));
             }
         }
+        
+        //Guiding by calculating distance between nearest spot & user's GPS
         function updateGuide(latitude, longitude){
             if (trailPoints.length === 0 || trailSpots.length === 0) return;
-            const me = nearestIndex(latitude, longitude);
-            if (me.dist > 500) {
+
+            const mySpot = nearestIndex(latitude, longitude);
+            if (mySpot.dist > 500) {
                 console.log("To far from trail");
                 return;
             }
-            const next = trailSpots.find(function (s) { return s.idx > me.index; });
+
+            trailSpots.forEach(function (spot) {
+                if (arrivedSpots.includes(spot.name)) return;
+                if (spot.idx <= mySpot.index) return;   
+                const distance = distanceM(latitude, longitude, spot.latitude, spot.longitude);
+                if (distance < approachM) {
+                    arrivedSpots.push(spot.name);
+                    console.log("Coming up: " + spot.name + " (" + Math.round(distance) + " m) - " + spot.desc);
+                    }
+                });
+
+            const views = viewsHere(latitude, longitude);
+            if (views.length > 0) {
+                const baseName = views[0].visibleFrom;
+
+                if (shownViewsFor !== baseName) {
+                    shownViewsFor = baseName;
+                    views.forEach(function (view) {
+                        const deg = directionDeg(latitude, longitude, view.latitude, view.longitude);
+                        const km = (distanceM(latitude, longitude, view.latitude, view.longitude) / 1000).toFixed(1);
+                        console.log(view.name + ": " + compassName(deg) + ", " + km + "km");
+                     });
+                }
+                return;
+            }
+            const next = trailSpots.find(function (spot) { return spot.idx > mySpot.index; });
+
             if (!next) {
                 console.log("You've been through every spot!");
                 return;
             }
-            const remain = Math.round(cum[next.idx] - cum[me.index]);
+            const remain = Math.round(cum[next.idx] - cum[mySpot.index]);
             console.log("next:", next.name, remain + " m");
+            //console.log("Debug:", next.idx, mySpot.index, cum.length, cum[next.idx], cum[mySpot.index]);
         } 
+
+        function directionDeg(lat1, lon1, lat2, lon2){
+            const toRad = function (d) { return d * Math.PI / 180; };
+            const toDeg = function (r) { return r * 180 / Math.PI; };
+
+            const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+            const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2))- Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+
+            return (toDeg(Math.atan2(y, x)) + 360) % 360;
+        }
+
+        function compassName(deg) {
+            const names = ["North", "Norteast", "East", "Southeast", "South", "Southwest", "West", "Northwest"];
+            return names[Math.round(deg / 45) % 8];
+        }
 
         function nearestIndex(latitude, longitude) {
             let bestIdx = 0;

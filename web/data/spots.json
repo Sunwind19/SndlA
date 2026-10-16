@@ -7,6 +7,13 @@
     "desc": "Beginning of the trail"
   },
   {
+    "name": "Jeffrey Pine & Rock Slab",
+    "type":"trail",
+    "latitude":  37.715629812395923,
+    "longitude": -119.58451473496456,
+    "desc": "Try smelling the jeffry pines ,while being surrounded by cairns and rocks depicting scenary of another planet! Don't you feel the sweet scent of butterscotch? "
+  },
+  {
     "name": "Midpoint",
     "type":"trail",
     "latitude": 37.718008,
@@ -23,6 +30,7 @@
   {
     "name": "Yosemite Valley",
     "type":"view",
+    "visibleFrom":"Summit",
     "latitude": 37.74293688722077,
     "longitude": -119.59076755999496,
     "desc": "A famous glacier-carved canyon located in the heart of Yosemite, where park reveals its most iconic landscape: Enjoy granite cliffs, and towering waterfalls. "
@@ -30,6 +38,7 @@
   {
     "name": "Half Dome",
     "type":"view",
+    "visibleFrom":"Summit",
     "latitude": 37.74830891395653,
     "longitude": -119.53425022012959,
     "desc": "Rising nearly 5,000 feet above Yosemite Valley and 8,800 feet above sea level, Half Dome is a true icon of Yosemite. Look at the amazing shape of this granite dome, literally 'cut in half'."
@@ -37,13 +46,15 @@
   {
     "name": "El Capitan",
     "type":"view",
+    "visibleFrom":"Summit",
     "latitude": 37.73404591946521,
     "longitude": -119.63786322779265,
     "desc": "This iconic granite formation, rising over 3,000 feet above the meadow, is a small universe of Yosemite. At night, climbers headlamps are the stars, and El Capitan shines like the moon."
   },
   {
-    "name": "The Historic Jeffrey Pine",
+    "name": "The Historic Fallen Jeffrey Pine",
     "type":"view",
+    "visibleFrom":"Summit",
     "latitude": 37.723100,
     "longitude":  -119.584400,
     "desc": "This gnarled mountaintop veteran were immortalized by Ansel Adams and countless other shutterbugs. Its bleached wood, though, remains a stirring sight—and an amazing meditation on the passage of time!"
@@ -51,6 +62,7 @@
   {
     "name": "Yosemite Falls",
     "type":"view",
+    "visibleFrom":"Summit",
     "latitude": 37.759679286167426,
     "longitude":  -119.59550876781267,
     "desc": "This is true diamond in Yosemite Valley -- the tallest waterfall in entire North America rising 2,425 feet."
