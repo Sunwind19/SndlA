@@ -21,13 +21,14 @@
             background: #fff; border-radius: 28px; padding: 18px 22px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000;
             font-family: -apple-system, "Helvetica Neue", sans-serif;
+            bottom: calc(24px + env(safe-area-inset-bottom)); 
         }
 
-        .topCard { display: flex; justify-content: space-between; align-items: center; padding-left: 36px; padding-right: 36px; }
+        .topCard { display: flex; justify-content: space-between; align-items: stretch; padding-left: 36px; padding-right: 36px; }
         #cardDistance { color: #9e9e9e; font-size: 16px; }
         #cardName { font-size: 26px; margin-top: 4px; margin-bottom: 4px; }
         #cardNote { color: #43a047; font-size: 14px; margin-top: 6px; }
-        #cardPhoto { width: 84px; height: 84px; border-radius: 24px; object-fit: cover; display: none; }
+        #cardPhoto { width: 120px; height: auto; align-self: stretch; border-radius: 24px; object-fit: cover; display: none; }
 
         .pill{ padding: 8px 16px; border-radius: 20px; font-size: 14px; }
         .pill.green { background: #43a047; color: #fff;}
