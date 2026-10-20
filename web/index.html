@@ -22,13 +22,20 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000;
             font-family: -apple-system, "Helvetica Neue", sans-serif;
             bottom: calc(24px + env(safe-area-inset-bottom)); 
+            min-height: 190px;
         }
 
-        .topCard { display: flex; justify-content: space-between; align-items: stretch; padding-left: 36px; padding-right: 36px; }
+        .topCard { display: flex; align-items: center; padding-left: 36px; padding-right: 36px; position: relative; z-index: 2; }
+        .topCard > div { max-width: 62%;}
+
         #cardDistance { color: #9e9e9e; font-size: 16px; }
         #cardName { font-size: 26px; margin-top: 4px; margin-bottom: 4px; }
         #cardNote { color: #43a047; font-size: 14px; margin-top: 6px; }
-        #cardPhoto { width: 120px; height: auto; align-self: stretch; border-radius: 24px; object-fit: cover; display: none; }
+        #cardPhoto { 
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; object-position: center 40%;
+            border-radius: 28px; display: none; z-index: 0;
+        }
 
         .pill{ padding: 8px 16px; border-radius: 20px; font-size: 14px; }
         .pill.green { background: #43a047; color: #fff;}
@@ -38,7 +45,7 @@
         .trailTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #000; color: #fff; }
         .sunsetTime.warn { background: #f3c0b6; color: #a8402f; }
 
-        .cardPills { display: flex; gap: 8px; margin-top: 14px; }
+        .cardPills { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 2; }
         .navBtn {
             display: none;
             position: absolute; top: 50%; transform: translateY(-50%);
@@ -46,9 +53,22 @@
             border: none; background: #43a047; color: #fff;
             font-size: 24px; font-weight: bold; cursor: pointer;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            z-index: 3;
         }
         #prevBtn { left: -6px; }
         #nextBtn { right: -6px; }
+
+        #card.hasPhoto::after {
+            content: ""; position: absolute; inset: 0; border-radius: 28px; z-index: 1;
+            background:
+                linear-gradient(to right, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 40%)
+                linear-gradient(to top, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 40%)
+        }
+
+        #card.hasPhoto #cardDistance { color: #6b6b6b; }
+        #card.hasPhoto #cardName { color: #111; }
+        #card.hasPhoto #cardNote { color: #2e7d32; }
+
     </style>
 
 </head>
@@ -59,13 +79,13 @@
         <span class = "pill black">5 plants saved</span>
      </div>
      <div id = "card">
+        <img id = "cardPhoto" alt="">
         <div class = "topCard">
             <div>
                 <div id = "cardDistance">--m</div> 
                 <div id = "cardName">Looking for the trail...</div>
                 <div id = "cardNote"></div>
             </div>
-            <img id = "cardPhoto" alt="">
         </div>
         <div class = "cardPills">
             <span id = "sunsetTime" class = "sunsetTime">~40 min</span>
@@ -324,6 +344,7 @@
             document.getElementById("cardName").textContent = name;
             document.getElementById("cardNote").textContent = note || "";
 
+            document.getElementById("card").classList.toggle("hasPhoto", !!photoUrl);
             const photo = document.getElementById("cardPhoto");
             if (photoUrl) {
                 photo.src = photoUrl;
@@ -361,7 +382,7 @@
             const s = step.spot; 
 
             if (step.kind == "arrive") {
-                setCard("You've arrived", s.name, (docentSteps.length - 1) +  "views from here", s.photo);
+                setCard("You've arrived", s.name, (docentSteps.length - 1) +  " views from here", s.photo);
                 map.flyTo([s.latitude, s.longitude], 16);
             }
             else {
