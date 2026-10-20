@@ -23,10 +23,10 @@
             font-family: -apple-system, "Helvetica Neue", sans-serif;
         }
 
-        .topCard { display: flex; justify-content: space-between; align-items: center; }
+        .topCard { display: flex; justify-content: space-between; align-items: center; padding-left: 36px; padding-right: 36px; }
         #cardDistance { color: #9e9e9e; font-size: 16px; }
         #cardName { font-size: 26px; margin-top: 4px; margin-bottom: 4px; }
-        #cardNote { font-size: 26px; margin-top:4px; }
+        #cardNote { color: #43a047; font-size: 14px; margin-top: 6px; }
         #cardPhoto { width: 84px; height: 84px; border-radius: 24px; object-fit: cover; display: none; }
 
         .pill{ padding: 8px 16px; border-radius: 20px; font-size: 14px; }
@@ -35,6 +35,19 @@
 
         .sunsetTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #fbe38e; color: #b08d2a; }
         .trailTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #000; color: #fff; }
+        .sunsetTime.warn { background: #f3c0b6; color: #a8402f; }
+
+        .cardPills { display: flex; gap: 8px; margin-top: 14px; }
+        .navBtn {
+            display: none;
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 48px; height: 48px; border-radius: 50%;
+            border: none; background: #43a047; color: #fff;
+            font-size: 24px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+        #prevBtn { left: -6px; }
+        #nextBtn { right: -6px; }
     </style>
 
 </head>
@@ -54,12 +67,15 @@
             <img id = "cardPhoto" alt="">
         </div>
         <div class = "cardPills">
-            <span class = "sunsetTime">~40 min</span>
-            <span class = "trailTime">~70 mins</span>
+            <span id = "sunsetTime" class = "sunsetTime">~40 min</span>
+            <span id = "trailTime" class = "trailTime">~70 mins</span>
         </div>
+        <button id = "prevBtn" class = "navBtn" onclick = "prevStep()">&lt;</button>
+        <button id = "nextBtn" class = "navBtn" onclick = "nextStep()">&gt;</button>
      </div>
 
-     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+     <script src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+     <script src = "https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"> </script>
      <script>
         const map = L.map("map").setView([37.7306, -119.5734], 14);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -73,10 +89,19 @@
         let myLocation = null;
         let trailSpots = [];
         let cum = [];
-        let arrivedSpots = [];
         let shownViewsFor = null;
+        let arrivedSpots = [];
+        let viewSpots = [];
+        let docentSteps = [];
+        let docentIdx = -1;
 
+        //constants
         const approachM = 100;
+        const arriveM = 40;
+        const leaveM = 100;
+        const walkKmh = 3;
+        let clockOffsetMs = 0;
+
         
         //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
         async function loadTrail() {
@@ -115,7 +140,7 @@
         function viewsHere(latitude, longitude) {
             return viewSpots.filter(function (v) {
                 const base = trailSpots.find(function (t) { return t.name === v.visibleFrom; });
-                return base && distanceM(latitude, longitude, base.latitude, base.longitude) < 100;
+                return base && distanceM(latitude, longitude, base.latitude, base.longitude) < arriveM;
             });
         }
 
@@ -157,6 +182,8 @@
         let simIndex = 0;
         let simPaused = false;
         function startSim() {
+            const sunsetToday = SunCalc.getTimes(new Date(), trailPoints[0][0], trailPoints[0][1]).sunset;
+            clockOffsetMs = sunsetToday.getTime() - 100 * 60000 - Date.now();
             setInterval(function () {
                 if (simPaused) return;
                 if (simIndex >= trailPoints.length) return;
@@ -211,12 +238,23 @@
         //Guiding by calculating distance between nearest spot & user's GPS
         function updateGuide(latitude, longitude){
             if (trailPoints.length === 0 || trailSpots.length === 0) return;
+            if (docentIdx != -1){
+                const base = docentSteps[0].spot;
+                if (distanceM(latitude, longitude, base.latitude, base.longitude) > leaveM){
+                    endDocent();
+                }
+                else {
+                    return;
+                }
+            }
 
             const mySpot = nearestIndex(latitude, longitude);
             if (mySpot.dist > 500) {
                 console.log("To far from trail");
                 return;
             }
+
+            updateTimes(mySpot.index, latitude, longitude)
 
             trailSpots.forEach(function (spot) {
                 if (arrivedSpots.includes(spot.name)) return;
@@ -231,17 +269,8 @@
             
             //Informing spots that has type "view", where user can see it from Summit
             const views = viewsHere(latitude, longitude);
-            if (views.length > 0) {
-                const baseName = views[0].visibleFrom;
-
-                if (shownViewsFor !== baseName) {
-                    shownViewsFor = baseName;
-                    views.forEach(function (view) {
-                        const deg = directionDeg(latitude, longitude, view.latitude, view.longitude);
-                        const km = (distanceM(latitude, longitude, view.latitude, view.longitude) / 1000).toFixed(1);
-                        console.log(view.name + ": " + compassName(deg) + ", " + km + "km");
-                     });
-                }
+            if (views.length > 0){
+                startDocent(views[0].visibleFrom, views);
                 return;
             }
             const next = trailSpots.find(function (spot) { return spot.idx > mySpot.index; });
@@ -267,7 +296,7 @@
         }
 
         function compassName(deg) {
-            const names = ["North", "Norteast", "East", "Southeast", "South", "Southwest", "West", "Northwest"];
+            const names = ["North", "Northeast", "East", "Southeast", "South", "Southwest", "West", "Northwest"];
             return names[Math.round(deg / 45) % 8];
         }
 
@@ -288,19 +317,117 @@
         function formatDist(m) {
             return m >= 1000 ? (m / 1000).toFixed(1) + "km": m + "m";
         }
-        function updateCard(spot, remain){
-            document.getElementById("cardDistance".textContent = formatDist(remain))
-            document.getElementById("cardName").textContent = spot.name
+
+        function setCard(distText, name, note, photoUrl) {
+            document.getElementById("cardDistance").textContent = distText;
+            document.getElementById("cardName").textContent = name;
+            document.getElementById("cardNote").textContent = note || "";
 
             const photo = document.getElementById("cardPhoto");
-            if (spot.photo){
-                photo.src = spot.photo;
+            if (photoUrl) {
+                photo.src = photoUrl;
                 photo.style.display = "block";
             }
-            else{
+            else {
                 photo.style.display = "none";
             }
         }
+
+        function updateCard(spot, remain) {
+            setCard(formatDist(remain), spot.name, "", spot.photo);
+        }
+
+        function startDocent(baseName, views) {
+            const base = trailSpots.find(function (t) { return t.name == baseName; });
+            if (!base) return;
+
+            const steps = views.map(function (v) {
+                return {
+                    kind: "view",
+                    spot: v,
+                    deg: directionDeg(base.latitude, base.longitude, v.latitude, v.longitude),
+                    km: distanceM(base.latitude, base.longitude, v.latitude, v.longitude) / 1000
+                };
+            }).sort(function (a, b) { return a.deg - b.deg; });
+
+            docentSteps = [{ kind: "arrive", spot: base}].concat(steps);
+            docentIdx = 0;
+            showStep(0);
+        }
+
+        function showStep(i){
+            const step = docentSteps[i];
+            const s = step.spot; 
+
+            if (step.kind == "arrive") {
+                setCard("You've arrived", s.name, (docentSteps.length - 1) +  "views from here", s.photo);
+                map.flyTo([s.latitude, s.longitude], 16);
+            }
+            else {
+                setCard(compassName(step.deg) + " · " + step.km.toFixed(1) + " km", s.name, s.desc, s.photo);
+                map.flyTo([s.latitude, s.longitude], step.km < 1 ? 16 : 14);
+            }
+
+            document.getElementById("prevBtn").style.display = i > 0 ? "block" : "none" ;
+            document.getElementById("nextBtn").style.display = i < docentSteps.length - 1 ? "block" : "none" ;
+        }
+
+        function nextStep() {
+            if (docentIdx < docentSteps.length - 1) {
+                docentIdx++;
+                showStep(docentIdx);
+            }
+        }
+        
+        function prevStep() {
+            if (docentIdx > 0) {
+                docentIdx--;
+                showStep(docentIdx);
+            }
+        }
+
+        function endDocent() {
+            docentIdx = -1;
+            docentSteps = [];
+            document.getElementById("prevBtn").style.display = "none";
+            document.getElementById("nextBtn").style.display = "none";
+            if (myLocation) map.flyTo(myLocation.getLatLng(), 16);
+        }
+
+        function nowMs() {
+            return Date.now() + clockOffsetMs;
+        }
+
+        function formatMin(min) {
+            if (min < 1) return "< 1 min";
+            if (min < 60) return "~" + Math.round(min) + " min";
+            const h = Math.floor (min / 60);
+            const m = Math.round (min %  60);
+            return "~" + h + "h" + m + "m";
+        }
+
+        function trailMinsleft(meIndex) {
+            const remainM = cum[cum.length - 1] - cum[meIndex];
+            const mPerMin = walkKmh * 1000 / 60;
+            return remainM / mPerMin;
+        }
+
+        function sunsetMinsleft(latitude, longitude) {
+            const sunset = SunCalc.getTimes(new Date(nowMs()), latitude, longitude).sunset;
+            return (sunset.getTime() - nowMs()) / 60000;
+        }
+
+        function updateTimes (meIndex, latitude, longitude) {
+            const trailMin = trailMinsleft(meIndex);
+            const sunsetMin = sunsetMinsleft(latitude, longitude);
+
+            document.getElementById("trailTime").textContent = formatMin(trailMin);
+
+            const sunsetPill = document.getElementById("sunsetTime");
+            sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin): "Sunset passed";
+            sunsetPill.classList.toggle("warn", trailMin > sunsetMin - 30);
+        }
+
      </script>
 </body>
 </html>
