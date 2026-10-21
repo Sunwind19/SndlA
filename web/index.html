@@ -61,7 +61,7 @@
         #card.hasPhoto::after {
             content: ""; position: absolute; inset: 0; border-radius: 28px; z-index: 1;
             background:
-                linear-gradient(to right, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 40%)
+                linear-gradient(to right, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 40%, rgba(255, 255, 255, 0) 100%)
                 linear-gradient(to top, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 40%)
         }
 
@@ -202,7 +202,7 @@
                 function(position){
                     const crds = position.coords
                     console.log(crds.latitude, crds.longitude, "Accuracy(m):", crds.accuracy, "Speed:", crds.speed);
-                    if (crds.accuracy > 50) return;
+                    if (crds.accuracy > 50) return; 
                     onPosition(crds.latitude, crds.longitude);
                 },
                 function (err){
@@ -216,7 +216,7 @@
         const SIM = new URLSearchParams(location.search).get("sim") === "1";
         let simPaused = false;
 
-        const simMult = Number(new URLSearchParams(locations.search).get("x")) || 1;
+        const simMult = Number(new URLSearchParams(location.search).get("x")) || 1;
         const simSpeedMs = 1.4;
         let simDist = 0;
 
@@ -239,7 +239,7 @@
 
             setInterval(function () {
                 if (!simPaused) {
-                    simDist = Math.min(simDist + simSpeetMs * simMult, cum[cum.length - 1]);
+                    simDist = Math.min(simDist + simSpeedMs * simMult, cum[cum.length - 1]);
                 }
                 const p = positionAt(simDist);
                 onPosition(p[0], p[1]);
