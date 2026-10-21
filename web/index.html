@@ -124,10 +124,17 @@
         let clockOffsetMs = 0;
         let history = [];
         const historyKeepSec = 120;
+
         let walkMs = walkKmh / 3.6;
-
-
+        let resting = false;
+        let slowSince = null;
+        let restSince = null;
+        let restPos = null;
         
+        const restSpeedMs = 0.3;
+        const restHoldSec = 20;
+        const moveSpeedMs = 0.8;
+
         //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
         async function loadTrail() {
             const res = await fetch("/api/trail");
@@ -233,6 +240,16 @@
             return trailPoints[trailPoints.length - 1];
         }
 
+        function jumpToSummit() {
+            const summit = trailSpots.find(function (s) { return s.name == "Summit;"; });
+            if (!summit) {
+                console.log("Summit spot not found");
+                return;
+            }
+            simDist = Math.max(cum[summit.idx] - 30, 0);
+            console.log("Jumped to near summit");
+        }
+
         function startSim() {
             const sunsetToday = SunCalc.getTimes(new Date(), trailPoints[0][0], trailPoints[0][1]).sunset;
             clockOffsetMs = sunsetToday.getTime() - 100 * 60000 - Date.now();
@@ -250,32 +267,12 @@
                     simPaused = !simPaused
                     console.log(simPaused ? "Resting":"Walking");
                 }
-            });
-        }
-        
-        /*
-        function startSim() {
-            const sunsetToday = SunCalc.getTimes(new Date(), trailPoints[0][0], trailPoints[0][1]).sunset;
-            clockOffsetMs = sunsetToday.getTime() - 100 * 60000 - Date.now();
-            setInterval(function () {
-                if (simPaused) return;
-                if (simIndex >= trailPoints.length) return;
-                
-                const p = trailPoints[simIndex];
-                onPosition(p[0], p[1]);
-                simIndex++;
-            }, 1000);
-
-
-            document.addEventListener("keydown", function (e) {
-                if (e.code === "Space") {
-                    simPaused = !simPaused;
-                    console.log(simPaused ? "Resting" : "Walking");
+                if (e.code == "KeyA") {
+                    jumpToSummit();
                 }
             });
         }
-            */
-
+        
         //Distance info
         function distanceM(lat1, lon1, lat2, lon2) {
             const R = 6371000;
@@ -298,6 +295,7 @@
             else{
                 startGPS();
             }
+            setInterval(checkRest, 2000);
         }
         init();
 
@@ -523,6 +521,47 @@
 
             return distanceM(first.lat, first.lon, last.lat, last.lon) / sec;
         }
+
+        function checkRest() {
+            if (history.length == 0) return;
+            const now = Date.now();
+            const last = history[history.length - 1];
+
+            let v = speedOver (20);
+            if (v === null && now - last.t > 20000) v = 0;
+            if (v === null) return;
+
+            if (!resting) {
+                if (v < restSpeedMs) {
+                    if (slowsince === null) slowSince = now;
+                    if (now - slowSince >= restHoldSec * 1000) {
+                        resting = true;
+                        restSince = now;
+                        restPos = { lat: last.lat, lon: last.lon };
+                        onRestStart();
+                    }
+                }
+                else {
+                    slowSince = null;
+                }
+            }
+                else {
+                    const vNow = speedOver(8);
+                    if (vNow !== null && vNow > moveSpeedMs) {
+                        resting = false;
+                        slowSince = null;
+                        onRestEnd(now - restSince);
+                    }
+                }
+            }
+
+            function onRestStart() {
+                console.log("REST started at", restPos);
+            }
+
+            function onRestEnd(ms) {
+                console.log("REST ended after", Math.round(ms / 1000), "s");
+            }
      </script>
 </body>
 </html>
