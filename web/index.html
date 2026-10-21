@@ -122,6 +122,10 @@
         const leaveM = 100;
         const walkKmh = 3;
         let clockOffsetMs = 0;
+        let history = [];
+        const historyKeepSec = 120;
+        let walkMs = walkKmh / 3.6;
+
 
         
         //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
@@ -175,6 +179,15 @@
             else{
                 myLocation.setLatLng([latitude, longitude]);
             }
+            recordPosition(latitude, longitude);
+
+            const v = speedOver(30);
+            console.log("speed:", v == null ? "..." : (v * 3.6).toFixed(1) + "km/h");
+
+            if (v != null && v > 0.5) {
+                walkMs = walkMs * 0.95 + v * 0.05;
+                walkMs = Math.min(Math.max(walkMs, 0.6), 2.0);
+            }
             updateGuide(latitude, longitude);
         }
 
@@ -189,6 +202,7 @@
                 function(position){
                     const crds = position.coords
                     console.log(crds.latitude, crds.longitude, "Accuracy(m):", crds.accuracy, "Speed:", crds.speed);
+                    if (crds.accuracy > 50) return;
                     onPosition(crds.latitude, crds.longitude);
                 },
                 function (err){
@@ -200,8 +214,46 @@
 
         //Simulator to test out program
         const SIM = new URLSearchParams(location.search).get("sim") === "1";
-        let simIndex = 0;
         let simPaused = false;
+
+        const simMult = Number(new URLSearchParams(locations.search).get("x")) || 1;
+        const simSpeedMs = 1.4;
+        let simDist = 0;
+
+        function positionAt(distM) {
+            for (let i = 1; i < cum.length; i++ ) {
+                if (cum[i] >= distM) {
+                    const seg = cum[i] - cum[i - 1];
+                    const f = seg == 0 ? 0 : (distM - cum[i - 1]) / seg;
+                    const a = trailPoints[i - 1];
+                    const b = trailPoints[i];
+                    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+                }
+            }
+            return trailPoints[trailPoints.length - 1];
+        }
+
+        function startSim() {
+            const sunsetToday = SunCalc.getTimes(new Date(), trailPoints[0][0], trailPoints[0][1]).sunset;
+            clockOffsetMs = sunsetToday.getTime() - 100 * 60000 - Date.now();
+
+            setInterval(function () {
+                if (!simPaused) {
+                    simDist = Math.min(simDist + simSpeetMs * simMult, cum[cum.length - 1]);
+                }
+                const p = positionAt(simDist);
+                onPosition(p[0], p[1]);
+            }, 1000);
+
+            document.addEventListener ("keydown", function(e) {
+                if (e.code == "Space") {
+                    simPaused = !simPaused
+                    console.log(simPaused ? "Resting":"Walking");
+                }
+            });
+        }
+        
+        /*
         function startSim() {
             const sunsetToday = SunCalc.getTimes(new Date(), trailPoints[0][0], trailPoints[0][1]).sunset;
             clockOffsetMs = sunsetToday.getTime() - 100 * 60000 - Date.now();
@@ -214,6 +266,7 @@
                 simIndex++;
             }, 1000);
 
+
             document.addEventListener("keydown", function (e) {
                 if (e.code === "Space") {
                     simPaused = !simPaused;
@@ -221,6 +274,7 @@
                 }
             });
         }
+            */
 
         //Distance info
         function distanceM(lat1, lon1, lat2, lon2) {
@@ -430,8 +484,7 @@
 
         function trailMinsleft(meIndex) {
             const remainM = cum[cum.length - 1] - cum[meIndex];
-            const mPerMin = walkKmh * 1000 / 60;
-            return remainM / mPerMin;
+            return remainM / walkMs / 60;
         }
 
         function sunsetMinsleft(latitude, longitude) {
@@ -449,7 +502,27 @@
             sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin): "Sunset passed";
             sunsetPill.classList.toggle("warn", trailMin > sunsetMin - 30);
         }
+        
+        function recordPosition(latitude, longitude) {
+            const now = Date.now();
+            history.push({ t: now, lat: latitude, lon: longitude });
+            while (history.length > 0 && now - history[0].t > historyKeepSec * 1000) {
+                history.shift();
+            }
+        }
 
+        function speedOver(windowSec) {
+            const now = Date.now();
+            const recent = history.filter(function (h) { return now - h.t <= windowSec * 1000 ;});
+            if (recent.length < 2) return null;
+
+            const first = recent[0];
+            const last = recent[recent.length - 1];
+            const sec = (last.t - first.t) / 1000;
+            if (sec < windowSec * 0.5) return null;
+
+            return distanceM(first.lat, first.lon, last.lat, last.lon) / sec;
+        }
      </script>
 </body>
 </html>
