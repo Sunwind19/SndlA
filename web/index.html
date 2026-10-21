@@ -527,41 +527,42 @@
             const now = Date.now();
             const last = history[history.length - 1];
 
-            let v = speedOver (20);
+            let v = speedOver(20);
             if (v === null && now - last.t > 20000) v = 0;
             if (v === null) return;
 
             if (!resting) {
                 if (v < restSpeedMs) {
-                    if (slowsince === null) slowSince = now;
+                    if (slowSince === null) slowSince = now;
                     if (now - slowSince >= restHoldSec * 1000) {
-                        resting = true;
-                        restSince = now;
-                        restPos = { lat: last.lat, lon: last.lon };
-                        onRestStart();
+                    resting = true;
+                    restSince = now;
+                    restPos = { lat: last.lat, lon: last.lon };
+                    onRestStart();
                     }
                 }
                 else {
                     slowSince = null;
                 }
             }
-                else {
-                    const vNow = speedOver(8);
-                    if (vNow !== null && vNow > moveSpeedMs) {
-                        resting = false;
-                        slowSince = null;
-                        onRestEnd(now - restSince);
-                    }
+            else {
+                const vNow = speedOver(8);
+                if (vNow !== null && vNow > moveSpeedMs) {
+                    resting = false;
+                    slowSince = null;
+                    onRestEnd(now - restSince);
                 }
             }
+        }
 
-            function onRestStart() {
-                console.log("REST started at", restPos);
-            }
 
-            function onRestEnd(ms) {
-                console.log("REST ended after", Math.round(ms / 1000), "s");
-            }
+        function onRestStart() {
+            console.log("REST started at", restPos);
+        }
+
+        function onRestEnd(ms) {
+            console.log("REST ended after", Math.round(ms / 1000), "s");
+        }
      </script>
 </body>
 </html>
