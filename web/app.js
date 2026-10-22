@@ -30,6 +30,7 @@ let resting = false;
 let slowSince = null;
 let restSince = null;
 let restPos = null;
+let pendingPhoto = null;
 
 const restSpeedMs = 0.3;
 const restHoldSec = 20;
@@ -486,3 +487,8 @@ function onTrashClean() {
     console.log("Trash Button pressed.")
     hideRestPopup();
 }
+
+function openCamera() {
+    document.getElementById("photoInput").click();
+}
+

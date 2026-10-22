@@ -34,12 +34,23 @@
      </div>
 
      <div id = "restPopup">
+        <img id = "restPhoto" alt = "">
         <div class = "restSmall">While you are resting...</div>
         <div class = "restTitle">Look around the ground</div>
         <div class = "restSub">The shelter area is where most of the trash gathers.</div>
-        <button id = "trashBtn" onclick = "onTrashClean()">&#128465;</button>
-        <div class = "restSmall restLabel" onclick = "onTrashClean()">It's Clean</div>
+
+        <div id = "restActions">
+            <button id = "cameraBtn" onclick = "openCamera()">&#128465; I found trash</button>
+            <button id = "trashBtn" onclick = "onTrashClean()">&#128465;</button>
+            <div class = "restSmall restLabel" onclick = "onTrashClean()">It's Clean</div>
+        </div>
+
+        <div id = "photoActions">
+            <button onclick = "openCamera()">Retake</button>
+            <button class = "primary" onclick = "onPhotoDone()">Done</button>
+        </div>
      </div>
+     <input id = "photoInput" type = "file" accept = "image/*" capture = "environment" style = "display:none">
 
      <script src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
      <script src = "https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"> </script>
