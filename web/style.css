@@ -1,0 +1,77 @@
+body {margin: 0;}
+#map { height: 100vh; height: 100dvh; }
+
+#topBar {
+    position: absolute; top: 16px; left: 16px;
+    display: flex; gap: 8px; z-index: 1000;
+}
+
+#card {
+    position: absolute; left: 12px; right: 12px; bottom: 24px;
+    background: #fff; border-radius: 28px; padding: 18px 22px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000;
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    bottom: calc(24px + env(safe-area-inset-bottom)); 
+    min-height: 190px;
+}
+
+.topCard { display: flex; align-items: center; padding-left: 36px; padding-right: 36px; position: relative; z-index: 2; }
+.topCard > div { max-width: 62%;}
+
+#cardDistance { color: #9e9e9e; font-size: 16px; }
+#cardName { font-size: 26px; margin-top: 4px; margin-bottom: 4px; }
+#cardNote { color: #43a047; font-size: 14px; margin-top: 6px; }
+#cardPhoto { 
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: center 40%;
+    border-radius: 28px; display: none; z-index: 0;
+}
+
+.pill{ padding: 8px 16px; border-radius: 20px; font-size: 14px; }
+.pill.green { background: #43a047; color: #fff;}
+.pill.black { background: #000; color: #fff;}
+
+.sunsetTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #fbe38e; color: #b08d2a; }
+.trailTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #000; color: #fff; }
+.sunsetTime.warn { background: #f3c0b6; color: #a8402f; }
+
+.cardPills { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 2; }
+.navBtn {
+    display: none;
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 48px; height: 48px; border-radius: 50%;
+    border: none; background: #43a047; color: #fff;
+    font-size: 24px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    z-index: 3;
+}
+#prevBtn { left: -6px; }
+#nextBtn { right: -6px; }
+
+#card.hasPhoto::after {
+    content: ""; position: absolute; inset: 0; border-radius: 28px; z-index: 1;
+    background:
+        linear-gradient(to right, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 40%, rgba(255, 255, 255, 0) 100%),
+        linear-gradient(to top, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 40%);
+}
+
+#restPopup{
+    display:none;
+    position: absolute; left: 12px; right: 12px; top: 90px; bottom: calc(24px + env(safe-area-inset-bottom));
+    background: #fff; border-radius: 28px; padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1001;
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    flex-direction: column; justify-content: flex-end;
+        }
+.restSmall { color: #9e9e9e; font-size: 14px; }
+.restTitle { font-size: 24px; margin: 8px 0;  }
+.restSub { color: #9e9e9e; font-size: 14px; margin-bottom: 24px; }
+.restLabel { text-align: center; margin-top: 6px; padding: 8px; cursor: pointer; }
+#trashBtn {
+    align-self: center; width: 64px; height: 64px; border-radius: 50%;
+    border: 2px solid #43a047; background: #fff; font-size: 28px; cursor: pointer;
+}
+
+#card.hasPhoto #cardDistance { color: #6b6b6b; }
+#card.hasPhoto #cardName { color: #111; }
+
