@@ -335,7 +335,7 @@ function showStep(i){
     const s = step.spot; 
 
     if (step.kind == "arrive") {
-        hideRestPopup();
+        if (!pendingPhoto) hideRestPopup();
         setCard("You've arrived", s.name, (docentSteps.length - 2) +  " views from here", s.photo);
         map.flyTo([s.latitude, s.longitude], 16);
     }
@@ -492,3 +492,59 @@ function openCamera() {
     document.getElementById("photoInput").click();
 }
 
+function resizeImage(file, maxSide) {
+    return new Promise (function (resolve, reject) {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = function() {
+            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(url);
+            canvas.toBlob(function(blob){resolve(blob);},"image/jpeg", 0.8);
+        };
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+
+document.getElementById("photoInput").addEventListener("change",async function(e){
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const blob =  await resizeImage(file, 1024);
+    const here = myLocation ? myLocation.getLatLng() : null;
+    pendingPhoto = {
+        blob: blob,
+        lat: here ? here.lat : null, 
+        lon: here ? here.lng : null,
+        t: Date.now()
+    };
+    showPhotoPreview(blob);
+    e.target.value = "";
+})
+
+function showPhotoPreview(blob) {
+    const photo = document.getElementById("restPhoto");
+    photo.src = URL.createObjectURL(blob);
+    photo.style.display = "block";
+    document.getElementById("restActions").style.display = "none";
+    document.getElementById("photoActions").style.display = "flex";
+    console.log("Photo ready:", Math.round(blob.size / 1024), "KB", pendingPhoto);
+}
+
+function resetRestPopup() {
+    const photo = document.getElementById("restPhoto");
+    photo.style.display = "none";
+    photo.src = "";
+    document.getElementById("restActions").style.display = "flex";
+    document.getElementById("photoActions").style.display = "none";
+    pendingPhoto = null;
+}
+
+function onPhotoDone() {
+    console.log("Photo confirmed: ", pendingPhoto);
+    hideRestPopup();
+}
