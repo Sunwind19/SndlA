@@ -555,7 +555,7 @@ async function onPhotoDone() {
     btn.disabled = true;
     btn.textContent = "Saving...";
     try {
-        const res = await fetch("/api/trash", { method : "POST", body : from});
+        const res = await fetch("/api/trash", { method : "POST", body : form});
         if (!res.ok) throw new Error("HTTP " + res.status);
         console.log("Saved:", await res.json());
         btn.disabled = false;
