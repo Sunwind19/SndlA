@@ -544,7 +544,27 @@ function resetRestPopup() {
     pendingPhoto = null;
 }
 
-function onPhotoDone() {
-    console.log("Photo confirmed: ", pendingPhoto);
-    hideRestPopup();
+async function onPhotoDone() {
+    if (!pendingPhoto) { hideRestPopup(); return; }
+    const form = new FormData();
+    form.append("photo", pendingPhoto.blob, "trash.jpg");
+    form.append("lat", pendingPhoto.lat);
+    form.append("lon", pendingPhoto.lon);
+
+    const btn = document.querySelector("#photoActions .primary");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+    try {
+        const res = await fetch("/api/trash", { method : "POST", body : from});
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        console.log("Saved:", await res.json());
+        btn.disabled = false;
+        btn.textContent = "Done";
+        hideRestPopup();
+    }
+    catch (err) {
+        console.log("Saved failed:", err);
+        btn.disabled = false;
+        btn.textContent = "Retry";
+    }
 }
