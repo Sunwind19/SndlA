@@ -36,7 +36,7 @@ def sb_headers(extra = None):
         h.update(extra)
     return h
 
-@app.route("/api/trash", methods = [])
+@app.route("/api/trash", methods = ["POST"])
 def api_trash_post():
     photo = request.files.get("photo")
     if photo is None:
@@ -56,7 +56,7 @@ def api_trash_post():
     )
 
     if up.status_code >= 300:
-        print("upload failed:", up.status__code, up.text)
+        print("upload failed:", up.status_code, up.text)
         return jsonify({"error": "upload failed"}), 502
 
     photo_url = SUPABASE_URL + "/storage/v1/object/public/" + BUCKET + "/" + name
@@ -76,7 +76,7 @@ def api_trash_post():
 @app.route("/api/trash", methods = ["GET"])
 def api_trash_list():
     r = requests.get(
-        SUPABASE_URL + "/rest/v1/trash_reports?select=*&order=created+at.desc&limit=20",
+        SUPABASE_URL + "/rest/v1/trash_reports?select=*&order=created_at.desc&limit=20",
         headers = sb_headers(), timeout = 20,
     )
     return jsonify(r.json())
