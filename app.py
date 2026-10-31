@@ -3,6 +3,8 @@ import time
 import uuid
 import json
 import requests
+import threading
+from gradio_client import Client, handle_file
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 
@@ -47,6 +49,7 @@ def api_trash_post():
 
     lat = request.form.get("lat", type = float)
     lon = request.form.get("lon", type = float)
+    device_id = request.form.get("device_id")
     name = str(int(time.time() * 1000)) + "-" + uuid.uuid4().hex[:6] + ".jpg"
 
     up = requests.post(
@@ -63,7 +66,7 @@ def api_trash_post():
     ins = requests.post(
         SUPABASE_URL + "/rest/v1/trash_reports",
         headers=sb_headers({"Content-Type" : "application/json", "Prefer" : "return=representation"}),
-        json = {"lat" : lat, "lon" : lon, "photo_url" : photo_url, "status" : "pending" },
+        json = {"lat" : lat, "lon" : lon, "photo_url" : photo_url, "status" : "pending", "device_id": device_id},
         timeout = 20,
     )
 
@@ -71,7 +74,9 @@ def api_trash_post():
         print("insert failed:", ins.status_code, ins.text)
         return jsonify({"error":"db insert failed"}), 501
 
-    return jsonify(ins.json()[0])
+    row = ins.json()[0]
+    threading.Thread(target=analyze_report, args=(row["id"], photo_url), daemon=True).start()
+    return jsonify(row)
 
 @app.route("/api/trash", methods = ["GET"])
 def api_trash_list():
@@ -80,6 +85,101 @@ def api_trash_list():
         headers = sb_headers(), timeout = 20,
     )
     return jsonify(r.json())
+
+HF_SPACE = os.getenv("HF_SPACE")
+HF_TOKEN = os.getenv("HF_TOKEN")
+_client = None
+_client_lock = threading.Lock()
+
+def get_client():
+    global _client
+    with _client_lock:
+        if _client is None:
+            _client = Client(HF_SPACE, hf_token = HF_TOKEN) if HF_TOKEN else Client(HF_SPACE)
+        return _client
+
+def reset_client():
+    global _client
+    with _client_lock:
+        _client = None
+
+def analyze_report(report_id, photo_url):
+    result = None
+    for attempt in range(2):
+        try:
+            result = get_client().predict(handle_file(photo_url), api_name = "/reporter_analyze")
+            break
+        except Exception as e:
+            print("analyze failed:", attempt + 1, type(e).__name__, e)
+            reset_client()
+            time.sleep(5)
+
+    body = {"status" : "done", "result" : result} if result is not None else {"status" : "error"}
+    r = requests.patch(
+        SUPABASE_URL + "/rest/v1/trash_reports?id=eq." + str(report_id),
+        headers=sb_headers({"Content-Type": "application/json"}),
+        json=body, timeout=20,
+    )
+    if r.status_code >= 300:
+        print("update failed:", r.status_code, r.text)
+
+def warm_space():
+    for i in range(12):
+        try:
+            get_client()
+            return
+        except Exception as e:
+            print("warming:", i + 1, type(e).__name__)
+            reset_client()
+            time.sleep(10)
+
+@app.route("/api/warmup", methods=["POST"])
+def api_warmup():
+    threading.Thread(target = warm_space, daemon = True).start()
+    return jsonify({"ok":True})
+
+@app.route("/api/trash/<int:report_id>", methods=["GET"])
+def api_trash_one(report_id):
+    r = requests.get(
+        SUPABASE_URL + "/rest/v1/trash_reports?select=*&id=eq." + str(report_id),
+        headers=sb_headers(), timeout=20,
+    )
+    rows = r.json()
+    if not rows:
+        return jsonify({"error" : "not found"}), 404
+    return jsonify(rows[0])
+
+RANKING = []
+
+def trash_count(result):
+    if not result:
+        return 0
+    return sum((result.get("raw_counts")or {}).values())
+
+@app.route("/api/rank", methods = ["GET"])
+
+def api_rank():
+    device = request.args.get("device","")
+    r = requests.get( SUPABASE_URL + 
+                     "/rest/v1/trash_reports?select=device_id,result&status=eq.done&device_id=not.is.null&limit=2000", 
+                     headers = sb_headers(), timeout = 20) #could be source of error --> increase timeout if there's an error (avg. respond time for image recognition was 22.8s)
+    rows = r.json() if r.status_code < 300 else []
+
+    scores = {}
+    for row in rows:
+        d = row.get("device_id")
+        scores[d] = scores.get(d, 0) + trash_count(row.get("result"))
+
+    mine = scores.get(device)
+    others = [s for d, s in scores.items() if d != device] + RANKING
+    total = len(others) + 1
+
+    if mine is None:
+        return jsonify({"rank": None, "total": total, "score": 0})
+    rank = 1 + sum(1 for s in others if s > mine)
+    return jsonify({"rank": rank , "total": total, "score": mine})
+
+    
 
 
 if __name__ == "__main__":

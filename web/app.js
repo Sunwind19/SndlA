@@ -31,10 +31,19 @@ let slowSince = null;
 let restSince = null;
 let restPos = null;
 let pendingPhoto = null;
+let analysisResults =[];
+let lastWarm = 0;
 
 const restSpeedMs = 0.3;
 const restHoldSec = 20;
 const moveSpeedMs = 0.8;
+
+const STATS_KEY = "sndla_stats";
+const DEVICE_KEY = "sndla_device";
+let stats = loadStats();
+let deviceID = getdeviceID();
+let myRank = { rank : null, total : null };
+let pendingReports = 0
 
 //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
 async function loadTrail() {
@@ -188,6 +197,11 @@ function distanceM(lat1, lon1, lat2, lon2) {
 
 //Calling out function
 async function init(){
+    if (new URLSearchParams(location.search).get("reset") == "1")
+    resetStats();
+    renderStats();
+    refreshRank();
+    await loadTrail();
     await loadTrail();
     await loadSpots();
     if(SIM){
@@ -198,6 +212,7 @@ async function init(){
     }
     setInterval(checkRest, 2000);
 }
+
 init();
 
 function buildCum(){
@@ -465,6 +480,7 @@ function checkRest() {
 }
 
 function onRestStart() {
+    warmSpace();
     console.log("REST started at", restPos);
     if (docentIdx != -1) return;
     showRestPopup();
@@ -472,7 +488,7 @@ function onRestStart() {
 
 function onRestEnd(ms) {
     console.log("REST ended after", Math.round(ms / 1000), "s");
-    hideRestPopup();
+    if (!pendingPhoto) hideRestPopup();
 }
 
 function showRestPopup() {
@@ -481,6 +497,7 @@ function showRestPopup() {
 
 function hideRestPopup(){
     document.getElementById("restPopup").style.display = "none";
+    resetRestPopup()
 }
 
 function onTrashClean() {
@@ -550,6 +567,7 @@ async function onPhotoDone() {
     form.append("photo", pendingPhoto.blob, "trash.jpg");
     form.append("lat", pendingPhoto.lat);
     form.append("lon", pendingPhoto.lon);
+    form.append("device_id", deviceId);
 
     const btn = document.querySelector("#photoActions .primary");
     btn.disabled = true;
@@ -557,7 +575,9 @@ async function onPhotoDone() {
     try {
         const res = await fetch("/api/trash", { method : "POST", body : form});
         if (!res.ok) throw new Error("HTTP " + res.status);
-        console.log("Saved:", await res.json());
+        const saved= await res.json();
+        console.log("Saved:", saved);
+        trackReport(saved.id);
         btn.disabled = false;
         btn.textContent = "Done";
         hideRestPopup();
@@ -566,5 +586,137 @@ async function onPhotoDone() {
         console.log("Saved failed:", err);
         btn.disabled = false;
         btn.textContent = "Retry";
+    }
+}
+
+async function pollReport(id) {
+    for (let i = 0; i < 30; i++) {
+        await new Promise(function (r) {setTimeout(r, 3000); });
+        try {
+            const res = await fetch("/api/trash/" + id);
+            if (!res.ok) continue;
+            const row = await res.json();
+            if (row.status == "done") {
+                console.log("AI result:", row.result);
+                analysisResults.push(row.result);
+                addResults(row.result)
+                return;
+            }
+            if (row.status === "error") {
+                console.log("AI failed for report", id);
+                return;
+            }
+        }
+        catch(err) {
+            console.log("poll error", err);
+        }
+    }
+    console.log("AI failed for report", id)
+}
+
+function warmSpace() {
+    if (Date.now() - lastWarm < 10 * 60 * 1000) return;
+    lastWarm = Date.now();
+    fetch("/api/warmup", {method: "POST"}).catch(function () {});
+}
+
+function emptyStats() {
+    return { items: 0, plants: 0, small: 0, big: 0, weightKg: 0, reports: 0, startAt: Date.now()}
+}
+
+function loadStats() {
+    try {
+        const saved = localStorage.getItem(STATS_KEY);
+        if (saved) return Object.assign(emptyStats(), JSON.parse(saved));
+    }
+    catch(err) {
+        console.log("stats load failed:", err);
+    }
+        return emptyStats();
+
+}
+
+function saveStats() {
+    try {
+        localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    }
+    catch(err) {
+        console.log("stats load failed:", err);
+    }
+}
+
+function getdeviceID() {
+    try{
+        let id = localStorage.getItem(DEVICE_KEY);
+        if (!id) {
+            id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+            localStorage.setItem(DEVICE_KEY, id);
+        }
+        return id;
+    }
+    catch(err) {
+        return "anon-" + Math.random().toString(16).slice(2);
+    }
+}
+
+function resetStats() {
+    stats = emptyStats()
+    saveStats();
+    try {
+        localStorage.removeItem(DEVICE_KEY);
+    }
+    catch(err) {}
+    deviceID = getdeviceID
+    rankInfo = { rank: null, total: null };
+    renderStats();
+}
+
+function addResults(r) {
+    if (!r) return; 
+    const counts = r.raw_counts || {};
+    const n = Object.values(counts).reduce(function (a, b) { return a + b; }, 0);
+    stats.items += n;
+    stats.plants += r.f || 0;
+    stats.big += r.ba || 0;
+    stats.small += r.sa || 0;
+    stats.weightKg = Math.round((stats.weightKg + (r.total_weight_kg || 0)) * 100) / 100;
+    stats.reports += 1;
+    saveStats();
+}
+
+function renderStats(bump) {
+    const rankPill = document.getElementById("rankPill");
+    const plantPill = document.getElementById("plantPill");
+    rankPill.textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
+    plantPill.textContent = stats.plants + "plants saved" + (pendingReports > 0 ? " · analyzing…" : "");
+    if (bump) {
+        [rankPill, plantPill].forEach(function(p) {
+            p.classList.add("bump");
+            setTimeout(function() {p.classList.remove("bump");}, 400)
+        });
+    }
+}
+
+async function refreshRank(bump){
+    try {
+        const res = await fetch("/api/rank?device=" + encodeURIComponent(deviceId));
+        if (!res.ok) return;
+        rankInfo = await res.json;
+        renderStats(bump);
+    }
+    catch(err) {
+        console.log("rank error", err);
+    }
+}
+
+async function trackReport(id) {
+    pendingReports++;
+    renderStats();
+    try {
+        await pollReport(id);
+    }
+    finally {
+        pendingReports--;
+        await refreshRank(true);
     }
 }
