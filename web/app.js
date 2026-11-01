@@ -45,6 +45,9 @@ let deviceID = getdeviceID();
 let myRank = { rank : null, total : null };
 let pendingReports = 0
 
+const NICK_KEY = "sndla_nick"
+let nickname = loadNickname()
+
 //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
 async function loadTrail() {
     const res = await fetch("/api/trail");
@@ -340,7 +343,7 @@ function startDocent(baseName, views) {
         };
     }).sort(function (a, b) { return a.deg - b.deg; });
 
-    docentSteps = [{ kind: "arrive", spot: base}].concat(steps).concat([{ kind: "rest", spot: base }]);
+    docentSteps = [{ kind: "arrive", spot: base}].concat(steps).concat([{ kind: "rest", spot: base }, {kind: "finish", spot: base}]);
     docentIdx = 0;
     showStep(0);
 }
@@ -351,13 +354,17 @@ function showStep(i){
 
     if (step.kind == "arrive") {
         if (!pendingPhoto) hideRestPopup();
-        setCard("You've arrived", s.name, (docentSteps.length - 2) +  " views from here", s.photo);
+        setCard("You've arrived", s.name, (docentSteps.length - 3) +  " views from here", s.photo);
         map.flyTo([s.latitude, s.longitude], 16);
     }
     else if (step.kind == "rest") {
         setCard("Before you go", s.name, "Take a moment to rest", s.photo);
         map.flyTo([s.latitude, s.longitude], 16);
         showRestPopup();
+    }
+    else if (step.kind == "finish") {
+        hideRestPopup();
+        setCard("That's the summit!", s.name, "Ready to wrap up?", s.photo);
     }
     else {
         hideRestPopup();
@@ -367,6 +374,7 @@ function showStep(i){
         
     document.getElementById("prevBtn").style.display = i > 0 ? "block" : "none" ;
     document.getElementById("nextBtn").style.display = i < docentSteps.length - 1 ? "block" : "none" ;
+    document.getElementById("finishBtn").style.display = "none";
 }
 
 function nextStep() {
@@ -719,4 +727,55 @@ async function trackReport(id) {
         pendingReports--;
         await refreshRank(true);
     }
+}
+
+function makeNickname() {
+    const adj = ["Swift", "Calm", "Brave", "Quiet", "Sunny", "Gentle"];
+    const animals = ["Fox", "Owl", "Deer", "Hedgehog", "Sparrow", "Otter"];
+    const pick = function (arr) { return arr[Math.floor(Math.random() * arr.length)];};
+    return pick(adj) + " " + pick(animals);
+}
+
+function loadNickname() {
+    try {
+    let n = localStorage.getItem(NICK_KEY)
+    if (!n) {
+        n = makeNickname();
+        localStorage.setItem(NICK_KEY, n);
+    }
+    return n;
+    }
+    catch (err) {
+        return makeNickname();
+    }
+}
+
+function editNickname() {
+    const input = prompt("Your name is on the board!", nickname);
+    if (input == null) return;
+    const name = input.trim().slice(0, 20);
+    if (!name) return; 
+    nickname = name;
+    try { localStorage.setItem(NICK_KEY, nickname); }
+    catch(err) {}
+    document.getElementById("nickText").textContent = nickname;
+}
+
+function fillRecap() {
+    document.getElementById("plantsNum").textContent = stats.plants;
+    document.getElementById("animalsNum").textContent = stats.small + stats.big;
+    document.getElementById("rankText").textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
+    document.getElementById("nickText").textContent = nickname; 
+}
+
+async function openRecap() {
+    hideRestPopup();
+    fillRecap();
+    document.getElementById("recap").style.display = "flex";
+    await refreshRank();
+    fillRecap();
+}
+
+function closeRecap() {
+    document.getElementById("recap").style.display = "none";
 }
