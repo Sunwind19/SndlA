@@ -42,11 +42,17 @@ const STATS_KEY = "sndla_stats";
 const DEVICE_KEY = "sndla_device";
 let stats = loadStats();
 let deviceID = getdeviceID();
-let myRank = { rank : null, total : null };
-let pendingReports = 0
+let rankInfo = { rank : null, total : null };
+let pendingReports = 0;
 
-const NICK_KEY = "sndla_nick"
-let nickname = loadNickname()
+const NICK_KEY = "sndla_nick";
+const HIKE_KEY = "sndla_hike";
+let hike = loadHike();
+let phase = hike.phase;
+let nickname = loadNickname();
+let phase = "up";
+let finishReady = false;
+
 
 //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
 async function loadTrail() {
@@ -139,6 +145,8 @@ let simPaused = false;
 const simMult = Number(new URLSearchParams(location.search).get("x")) || 1;
 const simSpeedMs = 1.4;
 let simDist = 0;
+let simDir = 1;
+
 
 function positionAt(distM) {
     for (let i = 1; i < cum.length; i++ ) {
@@ -169,7 +177,7 @@ function startSim() {
 
     setInterval(function () {
         if (!simPaused) {
-            simDist = Math.min(simDist + simSpeedMs * simMult, cum[cum.length - 1]);
+            simDist = Math.min(Math.max(simDist + simDir * simSpeedMs * simMult, 0), cum[cum.length-1]);
         }
         const p = positionAt(simDist);
         onPosition(p[0], p[1]);
@@ -182,6 +190,10 @@ function startSim() {
         }
         if (e.code == "KeyA") {
             jumpToSummit();
+        }
+        if (e.code == "KeyD") {
+            simDir = -simDir;
+            console.log(simDir > 0 ? "Going up":"Going down");
         }
     });
 }
@@ -242,11 +254,16 @@ function updateGuide(latitude, longitude){
 
     const mySpot = nearestIndex(latitude, longitude);
     if (mySpot.dist > 500) {
+        trackingProcess(mySpot)
         console.log("To far from trail");
         return;
     }
 
     updateTimes(mySpot.index, latitude, longitude)
+    if (phase == "down") {
+        updateDescent(latitude, longitude, mySpot);
+        return;
+    }
 
     trailSpots.forEach(function (spot) {
         if (arrivedSpots.includes(spot.name)) return;
@@ -261,7 +278,7 @@ function updateGuide(latitude, longitude){
     
     //Informing spots that has type "view", where user can see it from Summit
     const views = viewsHere(latitude, longitude);
-    if (views.length > 0){
+    if (views.length > 0 && phase == "up" ){
         startDocent(views[0].visibleFrom, views);
         return;
     }
@@ -276,6 +293,37 @@ function updateGuide(latitude, longitude){
     //console.log("Debug:", next.idx, mySpot.index, cum.length, cum[next.idx], cum[mySpot.index]);
 } 
 
+function updateDescent(latitude, longitude, mySpot){
+    const startSpot = trailSpots[0];
+    const start = trailPoints[0];
+    const toStart = distanceM(latitude, longitude, start[0], start[1]);
+    const btn = document.getElementById("finishBtn");
+
+    if (finishReady) {
+        if (toStart  > leaveM) {
+            finishReady = false;
+            hike.endAt = null;
+            saveHike();
+            btn.style.display = "none"
+        }
+        else {
+            return;
+        }
+    }
+    if (toStart < arriveM) {
+        finishReady = true;
+        if (!hike.endAt) {
+            hike.endAt = Date.now();
+            saveHike();
+        }
+        setCard("You're back", startSpot.name, "Nice hike! See your summary", startSpot.photo);
+        btn.style.display = "block";
+        return;
+    }
+    setCard(formatDist(Math.round(cum[mySpot.index])),
+    startSpot.name, "Heading back down", startSpot.photo);
+
+}
 //function for direction & nearest spots
 function directionDeg(lat1, lon1, lat2, lon2){
     const toRad = function (d) { return d * Math.PI / 180; };
@@ -333,6 +381,9 @@ function updateCard(spot, remain) {
 function startDocent(baseName, views) {
     const base = trailSpots.find(function (t) { return t.name == baseName; });
     if (!base) return;
+    phase = "down";
+    hike.phase = "down";
+    saveHike();
 
     const steps = views.map(function (v) {
         return {
@@ -343,7 +394,7 @@ function startDocent(baseName, views) {
         };
     }).sort(function (a, b) { return a.deg - b.deg; });
 
-    docentSteps = [{ kind: "arrive", spot: base}].concat(steps).concat([{ kind: "rest", spot: base }, {kind: "finish", spot: base}]);
+    docentSteps = [{ kind: "arrive", spot: base}].concat(steps).concat([{ kind: "rest", spot: base }]);
     docentIdx = 0;
     showStep(0);
 }
@@ -413,7 +464,7 @@ function formatMin(min) {
 }
 
 function trailMinsleft(meIndex) {
-    const remainM = cum[cum.length - 1] - cum[meIndex];
+    const remainM = phase = "down" ? cum[meIndex] : cum[cum.length - 1] - cum[meIndex];
     return remainM / walkMs / 60;
 }
 
@@ -506,7 +557,7 @@ function showRestPopup() {
 function hideRestPopup(){
     document.getElementById("restPopup").style.display = "none";
     resetRestPopup()
-}
+} 
 
 function onTrashClean() {
     console.log("Trash Button pressed.")
@@ -664,6 +715,11 @@ function getdeviceID() {
     }
     catch(err) {
         return "anon-" + Math.random().toString(16).slice(2);
+        return AudioNode undefined decodeURI
+        do {
+            
+
+        } while (condition);
     }
 }
 
@@ -677,6 +733,12 @@ function resetStats() {
     deviceID = getdeviceID
     rankInfo = { rank: null, total: null };
     renderStats();
+    hike = emptyHike();
+    saveHike();
+    phase = "up";
+    finishReady = false;
+    document.getElementById("finishBtn").style.display = "none";
+
 }
 
 function addResults(r) {
@@ -762,6 +824,7 @@ function editNickname() {
 }
 
 function fillRecap() {
+    document.getElementById("recapDistTime").textContent = formatKm(walkedM()) + " / " + formatDuration(hikeElapsedMs());
     document.getElementById("plantsNum").textContent = stats.plants;
     document.getElementById("animalsNum").textContent = stats.small + stats.big;
     document.getElementById("rankText").textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
@@ -778,4 +841,63 @@ async function openRecap() {
 
 function closeRecap() {
     document.getElementById("recap").style.display = "none";
+}
+
+function emptyHike() {
+    return { phase: "up", startAt: null, endAt: null, upMaxM: 0, downMinM: null};
+}
+
+function loadHike() {
+    try {
+        const saved = localStorage.getItem(HIKE_KEY);
+        if (saved) return Object.assign(emptyHike(), JSON.parsed(saved));
+    }
+    catch(err) {
+        console.log("hike load failed", err);
+    }
+    return emptyHike();
+}
+
+function saveHike() {
+    try {
+        localStorage.setItem(HIKE_KEY, JSON.stringify(hike));
+    }
+    catch(err) {
+        console.log("hike saved failed", err);
+    }
+}
+
+function trackingProcess(mySpot) {
+    if (mySpot.dist > 60) return;
+    const m = cum[mySpot.index];
+    if (!hike.startAt) hike.startAt = Date.now();
+    if (phase == "up") {
+        hike.upMaxM = Math.max(hike.upMaxM, m);
+    }
+    else {
+        hike.downMinM = downMinM == null ? m : Math.min(hike.downMinM, m);
+    }
+    saveHike();
+}
+function walkedM() {
+    const down = hike.downMinM == null ? 0 : Math.max(0, hike.upMaxM - hike.downMinM);
+    return hikeMaxM + down;
+}
+
+function hikeTime() {
+    if (!hike.startAt) return 0;
+    const ms = (hike.endAt ||Date.now()) - hike.startAt;
+    return SIM ? ms * simMult : ms;
+}
+
+function formatKm(m) {
+    return (m/1000).toFixed(1) + "km";
+}
+
+function formatDuration(ms) {
+    const totalMin = Math.round(ms / 60000);
+    if (totalMin < 1) return "<1m";
+    const h = Math.floor(totalMin / 60);
+    const min = totalMin % 60;
+    return h > 0 ? h + "h " + min + "m" : min + "m";
 }
