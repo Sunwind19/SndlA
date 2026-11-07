@@ -734,7 +734,7 @@ function resetStats() {
     rankInfo = { rank: null, total: null };
     renderStats();
     hike = emptyHike();
-    saveHike();
+    saveHike();ㄴㄴㄴㅗㅓㅏㅘㅓㅗㄴㅇㄹㅇ
     phase = "up";
     finishReady = false;
     document.getElementById("finishBtn").style.display = "none";
