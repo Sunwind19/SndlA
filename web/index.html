@@ -2,7 +2,7 @@
 <html lang = "ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SndlA</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -11,10 +11,23 @@
 
 </head>
 <body>
+    <div id = "picker">
+        <div class = "welcomeLogo">SndlA</div>
+        <div class = "welcomeSub">Feel and protect the mountain : Nature closest to your daily life</div>
+        <div class = "pickerTitle">What trail are you taking your journey today?</div>
+        <div id = "pickerStatus" class = "pickerSub">Finding trails near you ...</div>
+        <div id = "pickerList"></div>
+        <button class = "pickerItem" onclick = "chooseTrail('yose')">
+            <div class = "pickerName">Yosemite demo · Sentinel Dome</div>
+            <div class = "pickerMeta">Sample trail with full guide</div>
+        </button>
+        <button id = "pickerClose" onclick = "closePicker()">Keep current trail</button>
+    </div>
      <div id="map"></div>
      <div id = "topBar">
         <span id = "rankPill" class = "pill green">-/-</span>
         <span id = "plantPill" class = "pill black">0 plants saved</span>
+        <button id = "changeTrailBtn" onclick = "openPicker()">Change</button>
      </div>
      <div id = "card">
         <img id = "cardPhoto" alt="">
@@ -41,7 +54,7 @@
         <div class = "restSub">The shelter area is where most of the trash gathers.</div>
 
         <div id = "restActions">
-            <button id = "cameraBtn" onclick = "openCamera()">&#128465; I found trash</button>
+            <button id = "cameraBtn" onclick = "openCamera()">&#128247; I found trash</button>
             <button id = "trashBtn" onclick = "onTrashClean()">&#128465;</button>
             <div class = "restSmall restLabel" onclick = "onTrashClean()">It's Clean</div>
         </div>
@@ -62,7 +75,7 @@
         <div class = "recapNote">Estimated from the photos you took</div>
         <div id = "rankRow">
             <span id = "rankText"> - / - </span>
-            <span id = "nickText" onclick = "editNickName()">-</span>
+            <span id = "nickText" onclick = "editNickname()">-</span>
         </div>
         <div class = "recapThanks">All thanks to you...</div>
         <img id = "recapPhoto" src = "/img/animal.jpg" alt = "">
