@@ -128,6 +128,34 @@ def osm_trail():
         pts = pts[::-1]
     return {"name": data["name"], "points": pts}
 
+def auto_spots(pts):
+    start, end = pts[0], pts[-1]
+    spots = [
+        {"name": "Trailhead", "type": "trail", "latitude": start[0], "longitude": start[1], "desc": ""},
+        {"name": "Trail end", "type": "trail", "latitude": end[0], "longitude": end[1], "desc": ""},
+    ]
+    query = f"""
+    [out:json][timeout:20];
+    (
+      node["tourism"="viewpoint"]["name"](around:3000,{end[0]},{end[1]});
+      node["natural"="peak"]["name"](around:3000,{end[0]},{end[1]});
+    );
+    out;
+    """
+    try:
+        nodes = overpass(query)
+    except RuntimeError:
+        nodes = []
+    views = []
+    for n in nodes:
+        here = [n["lat"], n["lon"]]
+        if dist_m(here, end) < 50:
+            continue
+        views.append({"name": n.get("tags", {}).get("name", "View"), "type": "view",
+                      "visibleFrom": "Trail end", "latitude": n["lat"], "longitude": n["lon"], "desc": ""})
+    views.sort(key=lambda v: dist_m([v["latitude"], v["longitude"]], end))
+    return spots + views[:6]
+
 @app.route("/api/trail")
 def api_trail():
     return jsonify(load_json("web/data/trail.json"))
