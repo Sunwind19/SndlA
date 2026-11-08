@@ -158,10 +158,22 @@ def auto_spots(pts):
 
 @app.route("/api/trail")
 def api_trail():
+    try:
+        osm = osm_trail()
+    except RuntimeError:
+        return jsonify({"error":"trail load failed"}), 502
+    if osm:
+        return jsonify(osm)
     return jsonify(load_json("web/data/trail.json"))
 
 @app.route("/api/spots")
 def api_spots():
+    try:
+        osm = osm_trail()
+    except RuntimeError:
+        osm = None
+    if osm:
+        return jsonify(auto_spots(osm["points"]))
     return jsonify(load_json("web/data/spots.json"))
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
