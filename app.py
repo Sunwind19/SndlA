@@ -7,6 +7,7 @@ import threading
 from gradio_client import Client, handle_file
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
+import math
 
 load_dotenv()
 
@@ -19,6 +20,84 @@ def load_json(path):
 @app.route("/")
 def index():
     return send_from_directory("web", "index.html")
+
+OVERPASS_URLS = ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]
+OSM_HEADERS = {"User-Agent": "SndlA-Snowglobe-project"}
+_nearby_cache = {}
+_way_cache = {}
+
+def dist_m(a, b):
+    R =  6371000
+    lat1, lon1, lat2, lon2 = map(math.radians, [a[0], a[1], b[0], b[1]])
+    h = math.sin((lat2 - lat1)/2) **2 + math.cos(lat1) * math.cos(lat2) * math.sin((lat2 - lat1)/2)  ** 2
+    return 2 * R * math.asin(math.sqrt(h))
+
+def line_length(points):
+    return sum(dist_m(points[i-1], points[i]) for i in range(1, len(points)))
+
+def overpass(query):
+    last_err = None
+    for url in OVERPASS_URLS:
+        try:
+            r = request.post(url, data = {"data": query},headers =OSM_HEADERS, timeout = 25)
+            if r.status_code == 200:
+                return r.json().get("elements", [])
+            last_err = r.status_code
+        except requests.RequestException as e:
+            last_err = e
+    raise RuntimeError("overpass failed: " + str(last_err))
+
+@app.route("/api/nearby")
+def api_nearby():
+    #Mountain routes within 3km radius from user's current location. Max 5, from closest trail.
+    lat = request.args.get("lat", type = float)
+    lon = request.args.get("lon", type =float)   
+    if lat is None or lon is None:
+        return jsonify({"error": "lat/lon required"}),400
+    key = (round(lat,2)), (round(lon,2))
+
+    #cache file by 1km
+    if key in _nearby_cache:
+        return jsonify(_nearby_cache[key])
+
+    query = f"""
+    [out:json][timeout:20];
+    way["highway"~"path|footway|track"]["name"](around:3000,{lat},{lon});
+    out geom;
+    """
+
+    try:
+        ways = overpass(query)
+    except RuntimeError as e:
+        print(e)
+        return jsonify({"error":"trail search failed"}), 502
+
+    me = [lat, lon]
+    trails, seen = [], set()
+
+    for w in ways:
+        pts = [[p["lat"],p["lon"]] for p in w.get("geometry", [])]
+        if len(pts) < 5:
+            continue
+        length = line_length(pts)
+        if length < 300 or length > 10000:
+            continue
+        name = w.get("tags",{}).get("name", "trail")
+        _way_cache[w["id"]] = {"name": name,"points":pts }
+        away = min(dist_m(me, pts[0]), dist_m(me, pts[-1]))
+        trails.append({"id":w["id"], "name":name, "length" : round(length), "away": round(away)})
+
+    trails.sort(key = lambda t: t["away"])
+    result = []
+    for t in trails:
+        if t["name"] in seen:
+            continue
+        seen.add(t["name"])
+        result.append(t)
+        if len(result) == 5:
+            break
+    _nearby_cache[key] = result
+    return jsonify(result)
 
 @app.route("/api/trail")
 def api_trail():
