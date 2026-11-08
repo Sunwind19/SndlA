@@ -99,6 +99,16 @@ def api_nearby():
     _nearby_cache[key] = result
     return jsonify(result)
 
+def get_way(way_id):
+    if way_id in _way_cache:
+        return _way_cache[way_id]
+    els = overpass(f"[out:json][timeout:20];way({way_id});out geom;")
+    if not els:
+        return None
+    w = els[0]
+    data ={"name": w.get("tags", {}).get("name", "Trail"),"points": [[p["lat"], p["lon"]] for p in w.get("geometry", [])]}
+    _way_cache[way_id] = data
+    return data
 @app.route("/api/trail")
 def api_trail():
     return jsonify(load_json("web/data/trail.json"))
