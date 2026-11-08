@@ -109,6 +109,25 @@ def get_way(way_id):
     data ={"name": w.get("tags", {}).get("name", "Trail"),"points": [[p["lat"], p["lon"]] for p in w.get("geometry", [])]}
     _way_cache[way_id] = data
     return data
+
+def osm_trail():
+    trail = request.args.get("trail", "")
+    if not trail.startswith("osm:"):
+        return None
+    try: 
+        way_id = int(trail[4:])
+    except ValueError:
+        return None
+    data = get_way(way_id)
+    if not data or len(data["points"]) < 2:
+        return None
+    pts = data["points"]
+    slat = request.args.get("slat", type = float)
+    slon = request.args.get("slon", type=float)
+    if slat is not None and slon is not None and dist_m([slat, slon], pts[-1]) < dist_m([slat, slon], pts[0]):
+        pts = pts[::-1]
+    return {"name": data["name"], "points": pts}
+
 @app.route("/api/trail")
 def api_trail():
     return jsonify(load_json("web/data/trail.json"))
