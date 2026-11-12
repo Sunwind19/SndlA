@@ -46,13 +46,25 @@ let rankInfo = { rank : null, total : null };
 let pendingReports = 0;
 
 const NICK_KEY = "sndla_nick";
-const HIKE_KEY = "sndla_hike";
+const HIKE_KEY = "sndla_hike_" + (TRAIL || "yose");
 let hike = loadHike();
 let phase = hike.phase;
 let nickname = loadNickname();
-let phase = "up";
 let finishReady = false;
 
+const params = new URLSearchParams(location.search);
+const TRAIL = params.get("trail") || "";
+const START_LAT = params.get("slat");
+const START_LON = params.get("slon");
+
+
+// Trail to ask to server
+function trailQuery() {
+    if (TRAIL.startsWith("osm:")) {
+        return "?trail=" + encodeURIComponent(TRAIL) + "&slat=" + START_LAT + "&slon=" + START_LON;
+    }
+    return "";      
+}
 
 //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
 async function loadTrail() {
@@ -62,11 +74,10 @@ async function loadTrail() {
     buildCum();
     const line = L.polyline(trail.points, { color: "#43a047", weight: 5 }).addTo(map);
     map.fitBounds(line.getBounds());
+    return true;
 }
-
-//Loading spots - viewpoints, landmarks, etc. from spots.json.
 async function loadSpots(){
-    const response = await fetch("/api/spots")
+    const response = await fetch("/api/spots" + trailQuery());
     const spots = await response.json();
 
     spots.forEach(function (spot) {
@@ -108,7 +119,7 @@ function onPosition(latitude, longitude){
     recordPosition(latitude, longitude);
 
     const v = speedOver(30);
-    console.log("speed:", v == null ? "..." : (v * 3.6).toFixed(1) + "km/h");
+    console.log("ㄴㄴspeed:", v == null ? "..." : (v * 3.6).toFixed(1) + "km/h");
 
     if (v != null && v > 0.5) {
         walkMs = walkMs * 0.95 + v * 0.05;
@@ -212,6 +223,10 @@ function distanceM(lat1, lon1, lat2, lon2) {
 
 //Calling out function
 async function init(){
+    if (!SIM && !TRAIL) {      
+        openPicker();
+        return;
+    }
     if (new URLSearchParams(location.search).get("reset") == "1")
     resetStats();
     renderStats();
@@ -277,9 +292,11 @@ function updateGuide(latitude, longitude){
         });
     
     //Informing spots that has type "view", where user can see it from Summit
+    const endSpot = trailSpots[trailSpots.length - 1];          // 트레일 위 마지막 스팟 = 정상(끝점)
     const views = viewsHere(latitude, longitude);
-    if (views.length > 0 && phase == "up" ){
-        startDocent(views[0].visibleFrom, views);
+    const atEnd = distanceM(latitude, longitude, endSpot.latitude, endSpot.longitude) < arriveM;
+    if (phase == "up" && (views.length > 0 || atEnd)) {
+        startDocent(endSpot.name, views);
         return;
     }
     const next = trailSpots.find(function (spot) { return spot.idx > mySpot.index; });
