@@ -45,17 +45,17 @@ let deviceID = getdeviceID();
 let rankInfo = { rank : null, total : null };
 let pendingReports = 0;
 
+const params = new URLSearchParams(location.search);
+const TRAIL = params.get("trail") || "";
+const START_LAT = params.get("slat");
+const START_LON = params.get("slon");
+
 const NICK_KEY = "sndla_nick";
 const HIKE_KEY = "sndla_hike_" + (TRAIL || "yose");
 let hike = loadHike();
 let phase = hike.phase;
 let nickname = loadNickname();
 let finishReady = false;
-
-const params = new URLSearchParams(location.search);
-const TRAIL = params.get("trail") || "";
-const START_LAT = params.get("slat");
-const START_LON = params.get("slon");
 
 
 // Trail to ask to server
@@ -68,7 +68,8 @@ function trailQuery() {
 
 //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
 async function loadTrail() {
-    const res = await fetch("/api/trail");
+    const res = await fetch("/api/trail" + trailQuery());
+    if (!res.ok) { chooseTrail("yose"); return false; }
     const trail = await res.json();
     trailPoints = trail.points;
     buildCum();
@@ -119,12 +120,12 @@ function onPosition(latitude, longitude){
     recordPosition(latitude, longitude);
 
     const v = speedOver(30);
-    console.log("ㄴㄴspeed:", v == null ? "..." : (v * 3.6).toFixed(1) + "km/h");
+    console.log("speed:", v == null ? "..." : (v * 3.6).toFixed(1) + "km/h");
 
     if (v != null && v > 0.5) {
         walkMs = walkMs * 0.95 + v * 0.05;
         walkMs = Math.min(Math.max(walkMs, 0.6), 2.0);
-    }
+    }ㄴㄴㄴㄴㄴㄴㄴㄴㄴㄴㄴㄴ
     updateGuide(latitude, longitude);
 }
 
@@ -227,12 +228,12 @@ async function init(){
         openPicker();
         return;
     }
+    closePicker();
     if (new URLSearchParams(location.search).get("reset") == "1")
     resetStats();
     renderStats();
     refreshRank();
-    await loadTrail();
-    await loadTrail();
+    if (!(await loadTrail())) return;
     await loadSpots();
     if(SIM){
         startSim();
@@ -268,8 +269,8 @@ function updateGuide(latitude, longitude){
     }
 
     const mySpot = nearestIndex(latitude, longitude);
+    trackingProcess(mySpot)
     if (mySpot.dist > 500) {
-        trackingProcess(mySpot)
         console.log("To far from trail");
         return;
     }
@@ -482,7 +483,7 @@ function formatMin(min) {
 }
 
 function trailMinsleft(meIndex) {
-    const remainM = phase = "down" ? cum[meIndex] : cum[cum.length - 1] - cum[meIndex];
+    const remainM = phase == "down" ? cum[meIndex] : cum[cum.length - 1] - cum[meIndex];
     return remainM / walkMs / 60;
 }
 
@@ -644,7 +645,7 @@ async function onPhotoDone() {
     form.append("photo", pendingPhoto.blob, "trash.jpg");
     form.append("lat", pendingPhoto.lat);
     form.append("lon", pendingPhoto.lon);
-    form.append("device_id", deviceId);
+    form.append("device_id", deviceID);
 
     const btn = document.querySelector("#photoActions .primary");
     btn.disabled = true;
@@ -733,11 +734,6 @@ function getdeviceID() {
     }
     catch(err) {
         return "anon-" + Math.random().toString(16).slice(2);
-        return AudioNode undefined decodeURI
-        do {
-            
-
-        } while (condition);
     }
 }
 
@@ -748,11 +744,11 @@ function resetStats() {
         localStorage.removeItem(DEVICE_KEY);
     }
     catch(err) {}
-    deviceID = getdeviceID
+    deviceID = getdeviceID();
     rankInfo = { rank: null, total: null };
     renderStats();
     hike = emptyHike();
-    saveHike();ㄴㄴㄴㅗㅓㅏㅘㅓㅗㄴㅇㄹㅇ
+    saveHike();
     phase = "up";
     finishReady = false;
     document.getElementById("finishBtn").style.display = "none";
@@ -776,7 +772,7 @@ function renderStats(bump) {
     const rankPill = document.getElementById("rankPill");
     const plantPill = document.getElementById("plantPill");
     rankPill.textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
-    plantPill.textContent = stats.plants + "plants saved" + (pendingReports > 0 ? " · analyzing…" : "");
+    plantPill.textContent = stats.plants + " ㄴㄴㄴㄴㄴㄴㄴplants saved" + (pendingReports > 0 ? " · analyzing…" : "");
     if (bump) {
         [rankPill, plantPill].forEach(function(p) {
             p.classList.add("bump");
@@ -787,9 +783,9 @@ function renderStats(bump) {
 
 async function refreshRank(bump){
     try {
-        const res = await fetch("/api/rank?device=" + encodeURIComponent(deviceId));
+        const res = await fetch("/api/rank?device=" + encodeURIComponent(deviceID));
         if (!res.ok) return;
-        rankInfo = await res.json;
+        rankInfo = await res.json();
         renderStats(bump);
     }
     catch(err) {
@@ -842,9 +838,9 @@ function editNickname() {
 }
 
 function fillRecap() {
-    document.getElementById("recapDistTime").textContent = formatKm(walkedM()) + " / " + formatDuration(hikeElapsedMs());
+    document.getElementById("recapDistTime").textContent = formatKm(walkedM()) + " / " + formatDuration(hikeTime());
     document.getElementById("plantsNum").textContent = stats.plants;
-    document.getElementById("animalsNum").textContent = stats.small + stats.big;
+    document.getElementById("animalsNum").textContent = stats.small + stats.big;ㄴ
     document.getElementById("rankText").textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
     document.getElementById("nickText").textContent = nickname; 
 }
@@ -868,7 +864,7 @@ function emptyHike() {
 function loadHike() {
     try {
         const saved = localStorage.getItem(HIKE_KEY);
-        if (saved) return Object.assign(emptyHike(), JSON.parsed(saved));
+        if (saved) return Object.assign(emptyHike(), JSON.parse(saved));
     }
     catch(err) {
         console.log("hike load failed", err);
@@ -893,13 +889,13 @@ function trackingProcess(mySpot) {
         hike.upMaxM = Math.max(hike.upMaxM, m);
     }
     else {
-        hike.downMinM = downMinM == null ? m : Math.min(hike.downMinM, m);
+        hike.downMinM = hike.downMinM == null ? m : Math.min(hike.downMinM, m);
     }
     saveHike();
 }
 function walkedM() {
     const down = hike.downMinM == null ? 0 : Math.max(0, hike.upMaxM - hike.downMinM);
-    return hikeMaxM + down;
+    return hike.upMaxM + down;
 }
 
 function hikeTime() {
@@ -920,7 +916,7 @@ function formatDuration(ms) {
     return h > 0 ? h + "h " + min + "m" : min + "m";
 }
 
-// ===== 트레일 고르기 =====
+// Picking trails 
 function openPicker() {
     document.getElementById("picker").style.display = "flex";
     document.getElementById("pickerClose").style.display = TRAIL ? "block" : "none";

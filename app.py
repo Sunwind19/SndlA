@@ -29,7 +29,7 @@ _way_cache = {}
 def dist_m(a, b):
     R =  6371000
     lat1, lon1, lat2, lon2 = map(math.radians, [a[0], a[1], b[0], b[1]])
-    h = math.sin((lat2 - lat1)/2) **2 + math.cos(lat1) * math.cos(lat2) * math.sin((lat2 - lat1)/2)  ** 2
+        h = math.sin((lat2 - lat1)/2) **2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1)/2)  ** 2
     return 2 * R * math.asin(math.sqrt(h))
 
 def line_length(points):
@@ -39,7 +39,7 @@ def overpass(query):
     last_err = None
     for url in OVERPASS_URLS:
         try:
-            r = request.post(url, data = {"data": query},headers =OSM_HEADERS, timeout = 25)
+            r = requests.post(url, data = {"data": query},headers =OSM_HEADERS, timeout = 25)
             if r.status_code == 200:
                 return r.json().get("elements", [])
             last_err = r.status_code
