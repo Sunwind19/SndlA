@@ -422,7 +422,8 @@ function showStep(i){
 
     if (step.kind == "arrive") {
         if (!pendingPhoto) hideRestPopup();
-        setCard("You've arrived", s.name, (docentSteps.length - 3) +  " views from here", s.photo);
+        const n = docentSteps.length - 2;      
+        setCard("You've arrived", s.name, n > 0 ? n + " views from here" : "Take a look around", s.photo);
         map.flyTo([s.latitude, s.longitude], 16);
     }
     else if (step.kind == "rest") {
@@ -917,4 +918,69 @@ function formatDuration(ms) {
     const h = Math.floor(totalMin / 60);
     const min = totalMin % 60;
     return h > 0 ? h + "h " + min + "m" : min + "m";
+}
+
+// ===== 트레일 고르기 =====
+function openPicker() {
+    document.getElementById("picker").style.display = "flex";
+    document.getElementById("pickerClose").style.display = TRAIL ? "block" : "none";
+    const status = document.getElementById("pickerStatus");
+    const list = document.getElementById("pickerList");
+    list.innerHTML = "";
+    status.textContent = "Finding trails near you...";
+
+    if (!("geolocation" in navigator)) {
+        status.textContent = "Location isn't available. Try the Yosemite demo below.";
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(async function (pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        try {
+            const res = await fetch("/api/nearby?lat=" + lat + "&lon=" + lon);
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const trails = await res.json();
+            if (trails.length == 0) {
+                status.textContent = "No named trails within 3 km. Try the Yosemite demo below.";
+                return;
+            }
+            status.textContent = "Start guidance on one of these trails:";
+            trails.forEach(function (t) { list.appendChild(trailItem(t, lat, lon)); });
+        } catch (err) {
+            console.log("nearby error", err);
+            status.textContent = "Couldn't search trails right now. Try the Yosemite demo below.";
+        }
+    }, function () {
+        status.textContent = "We couldn't get your location. Try the Yosemite demo below.";
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+
+// Trails users can choose
+function trailItem(t, lat, lon) {
+    const btn = document.createElement("button");
+    btn.className = "pickerItem";
+    const name = document.createElement("div");
+    name.className = "pickerName";
+    name.textContent = t.name;
+    const meta = document.createElement("div");
+    meta.className = "pickerMeta";
+    meta.textContent = formatDist(t.length) + " trail · " + formatDist(t.away) + " from you";
+    btn.append(name, meta);
+    btn.onclick = function () { chooseTrail("osm:" + t.id, lat, lon); };
+    return btn;
+}
+
+// Reloading trail by the chosen trail
+function chooseTrail(id, lat, lon) {
+    const q = new URLSearchParams();
+    q.set("trail", id);
+    if (lat != null) {
+        q.set("slat", lat.toFixed(5));
+        q.set("slon", lon.toFixed(5));
+    }
+    location.search = q.toString();
+}
+
+function closePicker() {
+    document.getElementById("picker").style.display = "none";
 }
