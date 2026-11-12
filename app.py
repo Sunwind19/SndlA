@@ -21,31 +21,45 @@ def load_json(path):
 def index():
     return send_from_directory("web", "index.html")
 
-OVERPASS_URLS = ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]
-OSM_HEADERS = {"User-Agent": "SndlA-Snowglobe-project"}
+OSM_HEADERS = {"User-Agent": "SndlA/1.0 (https://github.com/Sunwind19/SndlA)"}
 _nearby_cache = {}
 _way_cache = {}
 
 def dist_m(a, b):
     R =  6371000
     lat1, lon1, lat2, lon2 = map(math.radians, [a[0], a[1], b[0], b[1]])
-        h = math.sin((lat2 - lat1)/2) **2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1)/2)  ** 2
+    h = math.sin((lat2 - lat1)/2) **2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1)/2)  ** 2
     return 2 * R * math.asin(math.sqrt(h))
 
 def line_length(points):
     return sum(dist_m(points[i-1], points[i]) for i in range(1, len(points)))
 
-def overpass(query):
-    last_err = None
-    for url in OVERPASS_URLS:
-        try:
-            r = requests.post(url, data = {"data": query},headers =OSM_HEADERS, timeout = 25)
-            if r.status_code == 200:
-                return r.json().get("elements", [])
-            last_err = r.status_code
-        except requests.RequestException as e:
-            last_err = e
-    raise RuntimeError("overpass failed: " + str(last_err))
+POSTPASS_URL = "https://postpass.geofabrik.de/api/interpreter"
+
+def postpass(sql):
+    try:
+        r = requests.post(POSTPASS_URL, data = {"data": sql}, headers = OSM_HEADERS, timeout = 20)
+    except requests.RequestException as e:
+        raise RuntimeError("postpass failed: " + type(e).__name__)
+    if r.status_code != 200:
+        print("postpass", r.status_code, r.text[:200])
+        raise RuntimeError("postpass failed: " + str(r.status_code))
+    return r.json().get("features", [])
+
+def to_points(geom):
+    if not geom:
+        return []
+    if geom["type"] == "LineString":
+        lines = [geom["coordinates"]]
+    elif geom["type"] == "MultiLineString":
+        lines = geom["coordinates"]
+    else:
+        return []
+    longest = max(lines, key = len)
+    return [[c[1], c[0]] for c in longest]
+
+def near(lat, lon, deg):
+    return f"ST_DWithin(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326), {deg})"
 
 @app.route("/api/nearby")
 def api_nearby():
@@ -60,14 +74,15 @@ def api_nearby():
     if key in _nearby_cache:
         return jsonify(_nearby_cache[key])
 
-    query = f"""
-    [out:json][timeout:20];
-    way["highway"~"path|footway|track"]["name"](around:3000,{lat},{lon});
-    out geom;
+    sql = f"""
+    SELECT osm_id, tags->>'name' AS name, geom FROM postpass_line
+    WHERE tags->>'highway' IN ('path', 'footway', 'track') AND tags ? 'name'
+    AND {near(lat, lon, 0.03)}
+    LIMIT 100
     """
 
     try:
-        ways = overpass(query)
+        feats = postpass(sql)
     except RuntimeError as e:
         print(e)
         return jsonify({"error":"trail search failed"}), 502
@@ -75,17 +90,18 @@ def api_nearby():
     me = [lat, lon]
     trails, seen = [], set()
 
-    for w in ways:
-        pts = [[p["lat"],p["lon"]] for p in w.get("geometry", [])]
+    for f in feats:
+        pts = to_points(f.get("geometry"))
         if len(pts) < 5:
             continue
         length = line_length(pts)
         if length < 300 or length > 10000:
             continue
-        name = w.get("tags",{}).get("name", "trail")
-        _way_cache[w["id"]] = {"name": name,"points":pts }
+        name = f["properties"].get("name") or "Trail"
+        way_id = f["properties"]["osm_id"]
+        _way_cache[way_id] = {"name": name, "points": pts}
         away = min(dist_m(me, pts[0]), dist_m(me, pts[-1]))
-        trails.append({"id":w["id"], "name":name, "length" : round(length), "away": round(away)})
+        trails.append({"id": way_id, "name": name, "length": round(length), "away": round(away)})
 
     trails.sort(key = lambda t: t["away"])
     result = []
@@ -99,14 +115,17 @@ def api_nearby():
     _nearby_cache[key] = result
     return jsonify(result)
 
-def get_way(way_id):
+def get_way(way_id, lat = None, lon = None):
     if way_id in _way_cache:
         return _way_cache[way_id]
-    els = overpass(f"[out:json][timeout:20];way({way_id});out geom;")
-    if not els:
+    sql = f"SELECT osm_id, tags->>'name' AS name, geom FROM postpass_line WHERE osm_id = {way_id}"
+    if lat is not None and lon is not None:
+        sql += " AND " + near(lat, lon, 0.1)
+    feats = postpass(sql + " LIMIT 1")
+    if not feats:
         return None
-    w = els[0]
-    data ={"name": w.get("tags", {}).get("name", "Trail"),"points": [[p["lat"], p["lon"]] for p in w.get("geometry", [])]}
+    f = feats[0]
+    data = {"name": f["properties"].get("name") or "Trail", "points": to_points(f.get("geometry"))}
     _way_cache[way_id] = data
     return data
 
@@ -124,6 +143,10 @@ def osm_trail():
     pts = data["points"]
     slat = request.args.get("slat", type = float)
     slon = request.args.get("slon", type=float)
+    data = get_way(way_id, slat, slon)
+    if not data or len(data["points"]) < 2:
+        return None
+    pts = data["points"]
     if slat is not None and slon is not None and dist_m([slat, slon], pts[-1]) < dist_m([slat, slon], pts[0]):
         pts = pts[::-1]
     return {"name": data["name"], "points": pts}
@@ -134,25 +157,24 @@ def auto_spots(pts):
         {"name": "Trailhead", "type": "trail", "latitude": start[0], "longitude": start[1], "desc": ""},
         {"name": "Trail end", "type": "trail", "latitude": end[0], "longitude": end[1], "desc": ""},
     ]
-    query = f"""
-    [out:json][timeout:20];
-    (
-      node["tourism"="viewpoint"]["name"](around:3000,{end[0]},{end[1]});
-      node["natural"="peak"]["name"](around:3000,{end[0]},{end[1]});
-    );
-    out;
+    sql = f"""
+    SELECT osm_id, tags->>'name' AS name, geom FROM postpass_point
+    WHERE (tags->>'tourism' = 'viewpoint' OR tags->>'natural' = 'peak') AND tags ? 'name'
+    AND {near(end[0], end[1], 0.03)}
+    LIMIT 50
     """
     try:
-        nodes = overpass(query)
+        feats = postpass(sql)
     except RuntimeError:
-        nodes = []
+        feats = []
     views = []
-    for n in nodes:
-        here = [n["lat"], n["lon"]]
+    for f in feats:
+        lon, lat = f["geometry"]["coordinates"]
+        here = [lat, lon]
         if dist_m(here, end) < 50:
             continue
-        views.append({"name": n.get("tags", {}).get("name", "View"), "type": "view",
-                      "visibleFrom": "Trail end", "latitude": n["lat"], "longitude": n["lon"], "desc": ""})
+        views.append({"name": f["properties"].get("name") or "View", "type": "view",
+                      "visibleFrom": "Trail end", "latitude": lat, "longitude": lon, "desc": ""})
     views.sort(key=lambda v: dist_m([v["latitude"], v["longitude"]], end))
     return spots + views[:6]
 
@@ -297,7 +319,7 @@ def api_trash_one(report_id):
         return jsonify({"error" : "not found"}), 404
     return jsonify(rows[0])
 
-RANKING = []
+RANKING = [14, 9, 6, 3, 2]
 
 def trash_count(result):
     if not result:

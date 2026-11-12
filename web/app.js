@@ -125,7 +125,7 @@ function onPosition(latitude, longitude){
     if (v != null && v > 0.5) {
         walkMs = walkMs * 0.95 + v * 0.05;
         walkMs = Math.min(Math.max(walkMs, 0.6), 2.0);
-    }ㄴㄴㄴㄴㄴㄴㄴㄴㄴㄴㄴㄴ
+    }
     updateGuide(latitude, longitude);
 }
 
@@ -772,7 +772,7 @@ function renderStats(bump) {
     const rankPill = document.getElementById("rankPill");
     const plantPill = document.getElementById("plantPill");
     rankPill.textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
-    plantPill.textContent = stats.plants + " ㄴㄴㄴㄴㄴㄴㄴplants saved" + (pendingReports > 0 ? " · analyzing…" : "");
+    plantPill.textContent = stats.plants + " plants saved" + (pendingReports > 0 ? " · analyzing…" : "");
     if (bump) {
         [rankPill, plantPill].forEach(function(p) {
             p.classList.add("bump");
@@ -840,7 +840,7 @@ function editNickname() {
 function fillRecap() {
     document.getElementById("recapDistTime").textContent = formatKm(walkedM()) + " / " + formatDuration(hikeTime());
     document.getElementById("plantsNum").textContent = stats.plants;
-    document.getElementById("animalsNum").textContent = stats.small + stats.big;ㄴ
+    document.getElementById("animalsNum").textContent = stats.small + stats.big;
     document.getElementById("rankText").textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
     document.getElementById("nickText").textContent = nickname; 
 }
@@ -970,6 +970,7 @@ function trailItem(t, lat, lon) {
 function chooseTrail(id, lat, lon) {
     const q = new URLSearchParams();
     q.set("trail", id);
+    if (id == "yose") q.set("sim", "1");
     if (lat != null) {
         q.set("slat", lat.toFixed(5));
         q.set("slon", lon.toFixed(5));
