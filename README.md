@@ -44,9 +44,7 @@ On Select your trail, I recommend choosing <mark>Yosemite demo · Sentinel Dome.
 At the summit, step through the viewpoints with >. After the last one, the simulator walks you back down. Press Finish hike to see the recap.
 
 ## Self developed APIs and other services incorperated
-A. Supabase — storage and database
-Storage: trash photos are uploaded to a public bucket (trash-photos).
-Database: each report is a row in the trash_reports table. It holds the location, photo URL, status (pending → done / error), the AI result (JSON), and an anonymous device ID.
+A. Supabase — storage and database for trash photos and user data
 
 B. Hugging Face — hosting the trash detection AI model
 The trash detection model runs as a Gradio app on a Hugging Face Space (Sunwind19/biomelf), where photo taken by user is sent and analyzed.
