@@ -692,6 +692,7 @@ async function onPhotoDone() {
         const res = await fetch("/api/trash", { method : "POST", body : form});
         if (!res.ok) throw new Error("HTTP " + res.status);
         const saved= await res.json();
+        fetch("/api/trash/" + saved.id + "/analyze", { method: "POST" }).catch(function () {});
         console.log("Saved:", saved);
         trackReport(saved.id);
         btn.disabled = false;

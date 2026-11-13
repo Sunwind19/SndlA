@@ -11,7 +11,7 @@ import math
 
 load_dotenv()
 
-app = Flask(__name__, static_folder="web", static_url_path="")
+app = Flask(__name__, static_folder="public", static_url_path="")
 
 def load_json(path):
     with open(path, encoding = "utf-8") as f:
@@ -19,7 +19,7 @@ def load_json(path):
 
 @app.route("/")
 def index():
-    return send_from_directory("web", "index.html")
+    return send_from_directory("public", "index.html")
 
 OSM_HEADERS = {"User-Agent": "SndlA/1.0 (https://github.com/Sunwind19/SndlA)"}
 _nearby_cache = {}
@@ -186,7 +186,7 @@ def api_trail():
         return jsonify({"error":"trail load failed"}), 502
     if osm:
         return jsonify(osm)
-    return jsonify(load_json("web/data/trail.json"))
+    return jsonify(load_json("public/data/trail.json"))
 
 @app.route("/api/spots")
 def api_spots():
@@ -196,7 +196,7 @@ def api_spots():
         osm = None
     if osm:
         return jsonify(auto_spots(osm["points"]))
-    return jsonify(load_json("web/data/spots.json"))
+    return jsonify(load_json("public/data/spots.json"))
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
@@ -245,7 +245,6 @@ def api_trash_post():
         return jsonify({"error":"db insert failed"}), 501
 
     row = ins.json()[0]
-    threading.Thread(target=analyze_report, args=(row["id"], photo_url), daemon=True).start()
     return jsonify(row)
 
 @app.route("/api/trash", methods = ["GET"])
@@ -305,7 +304,7 @@ def warm_space():
 
 @app.route("/api/warmup", methods=["POST"])
 def api_warmup():
-    threading.Thread(target = warm_space, daemon = True).start()
+    warm_space()
     return jsonify({"ok":True})
 
 @app.route("/api/trash/<int:report_id>", methods=["GET"])
@@ -320,6 +319,21 @@ def api_trash_one(report_id):
     return jsonify(rows[0])
 
 RANKING = [14, 9, 6, 3, 2]
+
+@app.route("/api/trash/<int:report_id>/analyze", methods=["POST"])
+def api_trash_analyze(report_id):
+    r = requests.get(
+        SUPABASE_URL + "/rest/v1/trash_reports?select=photo_url,status&id=eq." + str(report_id),
+        headers=sb_headers(), timeout=20,
+    )
+    rows = r.json() if r.status_code < 300 else []
+    if not rows:
+        return jsonify({"error": "not found"}), 404
+    if rows[0]["status"] != "pending":
+        return jsonify({"status": rows[0]["status"]})
+    analyze_report(report_id, rows[0]["photo_url"])
+    return jsonify({"status": "finished"})
+
 
 def trash_count(result):
     if not result:
