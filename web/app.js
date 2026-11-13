@@ -165,7 +165,8 @@ function startGPS(){
 const SIM = new URLSearchParams(location.search).get("sim") === "1";
 let simPaused = false;
 
-const simMult = Number(new URLSearchParams(location.search).get("x")) || 1;
+const simBase = Number(new URLSearchParams(location.search).get("x")) || 1;
+let simMult = simBase;
 const simSpeedMs = 1.4;
 let simDist = 0;
 let simDir = 1;
@@ -191,6 +192,7 @@ function jumpToSummit() {
         return;
     }
     simDist = Math.max(cum[summit.idx] - 30, 0);
+    simDir = 1;
     console.log("Jumped to near summit");
 }
 
@@ -206,17 +208,24 @@ function startSim() {
         onPosition(p[0], p[1]);
     }, 1000);
 
+    document.getElementById("keymap").style.display = "block";
     document.addEventListener ("keydown", function(e) {
         if (e.code == "Space") {
-            simPaused = !simPaused
-            console.log(simPaused ? "Resting":"Walking");
+            e.preventDefault();
+            simPaused = !simPaused;
+            document.getElementById("keySpace").classList.toggle("on", simPaused);
         }
         if (e.code == "KeyA") {
             jumpToSummit();
         }
+        if (e.code == "KeyS") {
+            simMult = simMult == 30 ? simBase : 30;
+            document.getElementById("keyS").classList.toggle("on", simMult == 30);
+        }
         if (e.code == "KeyD") {
-            simDir = -simDir;
-            console.log(simDir > 0 ? "Going up":"Going down");
+            simPaused = true;
+            document.getElementById("keySpace").classList.add("on");
+            showRestPopup();
         }
     });
 }
@@ -331,14 +340,12 @@ function updateDescent(latitude, longitude, mySpot){
     const startSpot = trailSpots[0];
     const start = trailPoints[0];
     const toStart = distanceM(latitude, longitude, start[0], start[1]);
-    const btn = document.getElementById("finishBtn");
 
     if (finishReady) {
         if (toStart  > leaveM) {
             finishReady = false;
             hike.endAt = null;
             saveHike();
-            btn.style.display = "none"
         }
         else {
             return;
@@ -351,7 +358,6 @@ function updateDescent(latitude, longitude, mySpot){
             saveHike();
         }
         setCard("You're back", startSpot.name, "Nice hike! See your summary", startSpot.photo);
-        btn.style.display = "block";
         return;
     }
     setCard(formatDist(Math.round(cum[mySpot.index])),
@@ -459,14 +465,19 @@ function showStep(i){
     }
         
     document.getElementById("prevBtn").style.display = i > 0 ? "block" : "none" ;
-    document.getElementById("nextBtn").style.display = i < docentSteps.length - 1 ? "block" : "none" ;
-    document.getElementById("finishBtn").style.display = "none";
+    document.getElementById("nextBtn").style.display = (i < docentSteps.length - 1 || SIM) ? "block" : "none" ;
 }
 
 function nextStep() {
     if (docentIdx < docentSteps.length - 1) {
         docentIdx++;
         showStep(docentIdx);
+    }
+    else if (SIM) {
+        simDir = -1;
+        simPaused = false;
+        document.getElementById("keySpace").classList.remove("on");
+        endDocent();
     }
 }
 
@@ -768,7 +779,6 @@ function resetStats() {
     saveHike();
     phase = "up";
     finishReady = false;
-    document.getElementById("finishBtn").style.display = "none";
 
 }
 
