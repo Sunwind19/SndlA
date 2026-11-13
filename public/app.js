@@ -75,7 +75,11 @@ function trailQuery() {
 //Loading trail from NPS data - starting with Sentinel Dome trail in Yosemite for test.
 async function loadTrail() {
     const res = await fetch("/api/trail" + trailQuery());
-    if (!res.ok) { chooseTrail("yose"); return false; }
+    if (!res.ok) {
+        if (TRAIL != "yose") chooseTrail("yose");
+        else setCard("", "Couldn't load the trail", "Please refresh in a moment", null);
+        return false;
+    }
     const trail = await res.json();
     trailPoints = trail.points;
     buildCum();

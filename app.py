@@ -13,8 +13,10 @@ load_dotenv()
 
 app = Flask(__name__, static_folder="public", static_url_path="")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def load_json(path):
-    with open(path, encoding = "utf-8") as f:
+    with open(os.path.join(BASE_DIR, path), encoding = "utf-8") as f:
         return json.load(f)
 
 @app.route("/")
@@ -186,7 +188,7 @@ def api_trail():
         return jsonify({"error":"trail load failed"}), 502
     if osm:
         return jsonify(osm)
-    return jsonify(load_json("public/data/trail.json"))
+    return jsonify(load_json("data/trail.json"))
 
 @app.route("/api/spots")
 def api_spots():
@@ -196,7 +198,7 @@ def api_spots():
         osm = None
     if osm:
         return jsonify(auto_spots(osm["points"]))
-    return jsonify(load_json("public/data/spots.json"))
+    return jsonify(load_json("data/spots.json"))
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
