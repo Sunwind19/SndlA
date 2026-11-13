@@ -1,4 +1,5 @@
-const map = L.map("map").setView([37.7306, -119.5734], 14);
+const map = L.map("map", { zoomControl: false }).setView([37.7306, -119.5734], 14);
+L.control.zoom({ position: "topright" }).addTo(map);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "© OpenStreetMap contributors"
@@ -58,6 +59,10 @@ let nickname = loadNickname();
 let finishReady = false;
 let slideIdx = 0;
 
+let follow = true;
+const FOLLOW_ZOOM = 17;
+map.on("dragstart", function () { follow = false; });
+
 
 // Trail to ask to server
 function trailQuery() {
@@ -114,13 +119,18 @@ function onPosition(latitude, longitude){
         myLocation = L.circleMarker([latitude, longitude],{
             radius: 8, color: "#0dfcd0", fillOpacity:1 
         }).addTo(map);
+        map.setView([latitude, longitude], FOLLOW_ZOOM);
     }
     else{
         myLocation.setLatLng([latitude, longitude]);
     }
+    if (follow && docentIdx == -1) {
+        map.panTo([latitude, longitude], { animate: true, duration: 0.8 });
+    }
     recordPosition(latitude, longitude);
 
-    const v = speedOver(30);
+    let v = speedOver(30);
+    if (SIM && v != null) v = v / simMult;
     console.log("speed:", v == null ? "..." : (v * 3.6).toFixed(1) + "km/h");
 
     if (v != null && v > 0.5) {
@@ -233,6 +243,11 @@ async function init(){
     if (new URLSearchParams(location.search).get("reset") == "1")
     resetStats();
     renderStats();
+    if (SIM) {
+        hike = emptyHike();
+        saveHike();
+        phase = "up";
+    }
     refreshRank();
     if (!(await loadTrail())) return;
     await loadSpots();
@@ -468,7 +483,8 @@ function endDocent() {
     hideRestPopup();
     document.getElementById("prevBtn").style.display = "none";
     document.getElementById("nextBtn").style.display = "none";
-    if (myLocation) map.flyTo(myLocation.getLatLng(), 16);
+    follow = true;
+    if (myLocation) map.flyTo(myLocation.getLatLng(), FOLLOW_ZOOM);
 }
 
 function nowMs() {
@@ -927,6 +943,11 @@ function showSlide(i) {
 
 function nextSlide() {
     showSlide(slideIdx + 1);
+}
+
+function recenter() {
+    follow = true;
+    if (myLocation) map.setView(myLocation.getLatLng(), FOLLOW_ZOOM);
 }
 
 // Picking trails 

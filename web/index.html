@@ -18,11 +18,11 @@
         <div class = "slide" id = "slide4">
             <img class = "selectTitle" src = "/img/select.png" alt = "Select your trail">
             <div id = "pickerStatus">Finding trails near you...</div>
-            <div id = "pickerList"></div>
-            <button class = "pickerItem" onclick = "chooseTrail('yose')">
+            <button class = "pickerItem demo" onclick = "chooseTrail('yose')">
                 <div class = "pickerName">Yosemite demo · Sentinel Dome</div>
-                <div class = "pickerMeta">Sample trail with full guide</div>
-            </button>
+                <div class = "pickerMeta">Sample trail with full guide</div>  
+            </button> 
+            <div id = "pickerList"></div>
             <button id = "pickerClose" onclick = "closePicker()">Keep current trail</button>
         </div>
     </div>
@@ -31,6 +31,7 @@
         <span id = "rankPill" class = "pill green">-/-</span>
         <span id = "plantPill" class = "pill black">0 plants saved</span>
         <button id = "changeTrailBtn" onclick = "openPicker()">Change</button>
+        <button id = "recenterBtn" onclick = "recenter()">&#9678;</button>
      </div>
      <div id = "card">
         <img id = "cardPhoto" alt="">
