@@ -56,6 +56,7 @@ let hike = loadHike();
 let phase = hike.phase;
 let nickname = loadNickname();
 let finishReady = false;
+let slideIdx = 0;
 
 
 // Trail to ask to server
@@ -916,10 +917,23 @@ function formatDuration(ms) {
     return h > 0 ? h + "h " + min + "m" : min + "m";
 }
 
+function showSlide(i) {
+    slideIdx = i;
+    document.querySelectorAll(".slide").forEach(function (s, k) {
+        s.classList.toggle("on", k == i);
+    });
+    if (i == 3) findTrails();
+}
+
+function nextSlide() {
+    showSlide(slideIdx + 1);
+}
+
 // Picking trails 
 function openPicker() {
-    document.getElementById("picker").style.display = "flex";
+    document.getElementById("picker").style.display = "block";
     document.getElementById("pickerClose").style.display = TRAIL ? "block" : "none";
+    showSlide(TRAIL ? 3 : 0);
     const status = document.getElementById("pickerStatus");
     const list = document.getElementById("pickerList");
     list.innerHTML = "";
@@ -949,6 +963,10 @@ function openPicker() {
     }, function () {
         status.textContent = "We couldn't get your location. Try the Yosemite demo below.";
     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+
+function findTrails() {
+    const status = document.getElementById("pickerStatus");
 }
 
 // Trails users can choose

@@ -12,16 +12,19 @@
 </head>
 <body>
     <div id = "picker">
-        <div class = "welcomeLogo">SndlA</div>
-        <div class = "welcomeSub">Feel and protect the mountain : Nature closest to your daily life</div>
-        <div class = "pickerTitle">What trail are you taking your journey today?</div>
-        <div id = "pickerStatus" class = "pickerSub">Finding trails near you ...</div>
-        <div id = "pickerList"></div>
-        <button class = "pickerItem" onclick = "chooseTrail('yose')">
-            <div class = "pickerName">Yosemite demo · Sentinel Dome</div>
-            <div class = "pickerMeta">Sample trail with full guide</div>
-        </button>
-        <button id = "pickerClose" onclick = "closePicker()">Keep current trail</button>
+        <div class = "slide" id = "slide1"><button class = "nextSlide" onclick = "nextSlide()">&gt;</button></div>
+        <div class = "slide" id = "slide2"><button class = "nextSlide" onclick = "nextSlide()">&gt;</button></div>
+        <div class = "slide" id = "slide3"><button class = "nextSlide" onclick = "nextSlide()">&gt;</button></div>
+        <div class = "slide" id = "slide4">
+            <img class = "selectTitle" src = "/img/select.png" alt = "Select your trail">
+            <div id = "pickerStatus">Finding trails near you...</div>
+            <div id = "pickerList"></div>
+            <button class = "pickerItem" onclick = "chooseTrail('yose')">
+                <div class = "pickerName">Yosemite demo · Sentinel Dome</div>
+                <div class = "pickerMeta">Sample trail with full guide</div>
+            </button>
+            <button id = "pickerClose" onclick = "closePicker()">Keep current trail</button>
+        </div>
     </div>
      <div id="map"></div>
      <div id = "topBar">
