@@ -1,7 +1,7 @@
 
 
 # SNDL_A
-<img width="782" height="683" alt="image" src="https://github.com/user-attachments/assets/c9c80418-89ec-4a91-af1b-f1963e285313" />
+<img width="391" height="341" alt="image" src="https://github.com/user-attachments/assets/c9c80418-89ec-4a91-af1b-f1963e285313" />
 
 ## What is SNDL A in one sentence?
 **WHAT** Ever had a experience "what that is" when hiking, or walking in the park, but never getting any explanation? Ever had spotted piece of wastes in the middle of beautiful mountain? Using SndlA, you can get meaningful experience as the app guides you through the famous viewpoints, while being mountain protector yourself by taking picture of waste when you take a rest! 
