@@ -167,7 +167,7 @@ let simPaused = false;
 
 const simBase = Number(new URLSearchParams(location.search).get("x")) || 1;
 let simMult = simBase;
-const simSpeedMs = 1.4;
+const simSpeedMs = 0.85;
 let simDist = 0;
 let simDir = 1;
 
@@ -525,9 +525,7 @@ function updateTimes (meIndex, latitude, longitude) {
     const sunsetMin = sunsetMinsleft(latitude, longitude);
 
     document.getElementById("trailTime").textContent = formatMin(trailMin) + (phase == "down" ? " to trailhead" : " to the top");
-
     sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin) + " until sunset" : "Sunset passed";
-    sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin): "Sunset passed";
     sunsetPill.classList.toggle("warn", trailMin > sunsetMin - 30);
 }
 
