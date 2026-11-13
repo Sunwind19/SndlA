@@ -88,7 +88,13 @@ async function loadSpots(){
     const spots = await response.json();
 
     spots.forEach(function (spot) {
-        L.marker([spot.latitude, spot.longitude])
+        const isView = spot.type === "view";
+        L.circleMarker([spot.latitude, spot.longitude], {
+            radius: isView ? 9 : 7,
+            color: "#fff", weight: 3,
+            fillColor: isView ? "#ffff00" : "#2f00d9",
+            fillOpacity: 1
+        })
         .addTo(map)
         .bindPopup("<b>" + spot.name + "</b><br>" + spot.desc);
     });
@@ -525,6 +531,7 @@ function updateTimes (meIndex, latitude, longitude) {
     const sunsetMin = sunsetMinsleft(latitude, longitude);
 
     document.getElementById("trailTime").textContent = formatMin(trailMin) + (phase == "down" ? " to trailhead" : " to the top");
+    const sunsetPill = document.getElementById("sunsetTime");
     sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin) + " until sunset" : "Sunset passed";
     sunsetPill.classList.toggle("warn", trailMin > sunsetMin - 30);
 }
@@ -798,13 +805,27 @@ function addResults(r) {
     saveStats();
 }
 
+function ordinal(n) {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 function renderStats(bump) {
     const rankPill = document.getElementById("rankPill");
     const plantPill = document.getElementById("plantPill");
-    rankPill.textContent = (rankInfo.rank || "-") + "/" + (rankInfo.total || "-");
-    plantPill.textContent = stats.plants + " plants saved" + (pendingReports > 0 ? " · analyzing…" : "");
+    const animalPill = document.getElementById("animalPill");
+    const short = window.innerWidth < 600;
+    if (rankInfo.rank) {
+        rankPill.textContent = ordinal(rankInfo.rank) + (short ? " of " + rankInfo.total : " out of " + rankInfo.total + " mountain protectors");
+    }
+    else {
+        rankPill.textContent = short ? "Unranked" : "Not ranked yet";
+    }
+    plantPill.textContent = stats.plants + (short ? " plants" : " plants saved") + (pendingReports > 0 ? " · analyzing…" : "");
+    animalPill.textContent = (stats.small + stats.big) + (short ? " animals" : " animals saved");
     if (bump) {
-        [rankPill, plantPill].forEach(function(p) {
+        [rankPill, plantPill, animalPill].forEach(function(p) {
             p.classList.add("bump");
             setTimeout(function() {p.classList.remove("bump");}, 400)
         });

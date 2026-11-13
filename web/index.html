@@ -28,8 +28,11 @@
     </div>
      <div id="map"></div>
      <div id = "topBar">
-        <span id = "rankPill" class = "pill green">-/-</span>
-        <span id = "plantPill" class = "pill black">0 plants saved</span>
+        <div class = "pillGroup">
+            <span id = "rankPill" class = "pill green">Not ranked yet</span>
+            <span id = "plantPill" class = "pill black">0 plants saved</span>
+            <span id = "animalPill" class = "pill cyan">0 animals saved</span>
+        </div>
         <button id = "changeTrailBtn" onclick = "openPicker()">Change</button>
         <button id = "recenterBtn" onclick = "recenter()">&#9678;</button>
      </div>
@@ -82,7 +85,7 @@
 
      <div id = "recap">
         <div id = "recapDistTime" class = "recapSmall">--km / --</div>
-        <div class = "encourage">Well Done!!!</div>
+        <div class = "encourage">These animals and plants would be saved thanks to your photo</div>
         <div class = "recapSaved">
             <div class = "saved"><div id = "plantsNum" class = "savedNum">0</div><div>Plants saved</div></div>
             <div class = "saved"><div id = "animalsNum" class = "savedNum">0</div><div>Animals saved</div></div>
@@ -92,7 +95,7 @@
             <span id = "rankText"> - / - </span>
             <span id = "nickText" onclick = "editNickname()">-</span>
         </div>
-        <div class = "recapThanks">All thanks to you...</div>
+        <div class = "recapThanks">All thanks to you...their habitat, their world would remain.</div>
         <img id = "recapPhoto" src = "/img/animal.jpg" alt = "">
         <button id = "recapClose" onclick = "closeRecap()">Back to map</button>
      </div>
