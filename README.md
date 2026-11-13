@@ -4,6 +4,7 @@
 
 ## What is SNDL A in one sentence?
 **WHAT** Ever had a experience "what that is" when hiking, or walking in the park, but never getting any explanation? Ever had spotted piece of wastes in the middle of beautiful mountain? Using SndlA, you can get meaningful experience as the app guides you through the famous viewpoints, while being mountain protector yourself by taking picture of waste when you take a rest! 
+
 **WHY** I developed this web-app because as person living in an island with 80+ small mountains, mountain waste problems are really serious in my local...and only 4% of total is being collected by the government. Thus, mapping out location of waste would be first step to establish more efficient system (which I am planning to connect with biomimetic robot I am building)
 
 ## What does it do? & Screenshots
