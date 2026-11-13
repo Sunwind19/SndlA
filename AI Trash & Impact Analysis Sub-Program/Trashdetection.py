@@ -77,10 +77,10 @@ def reporter_analyze(img):
         "summary": f"Identified {sum(counts.values())} items ({w}kg)",
         "total_weight_kg": w,
         "seeds_potential": seeds,
-        "f": f,      # 식물 개수 (숫자)
-        "ba": ba,    # 대동물 개수 (숫자)
-        "sa": sa,    # 소동물 개수 (숫자)
-        "hazard_score": h,  # <--- 이 줄이 추가되어야 Base 44에서 읽을 수 있습니다!
+        "f": f,      # plants
+        "ba": ba,    # big animals
+        "sa": sa,    # small animals
+        "hazard_score": h,  
         "raw_counts": counts 
     }
 
@@ -98,7 +98,7 @@ def reporter_analyze(img):
 
     return {
         "cleanup_summary": f"You cleaned {sum(net_collected.values())} items ({w}kg)!",
-        "total_weight_kg": w,          # <--- 앱에서 바로 쓸 숫자형 데이터 (실제 수거 무게)
+        "total_weight_kg": w,          
         "total_count": sum(net_collected.values()),
         "earned_seeds": seeds,
         "f": f,      # Num of plants
