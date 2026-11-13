@@ -524,9 +524,9 @@ function updateTimes (meIndex, latitude, longitude) {
     const trailMin = trailMinsleft(meIndex);
     const sunsetMin = sunsetMinsleft(latitude, longitude);
 
-    document.getElementById("trailTime").textContent = formatMin(trailMin);
+    document.getElementById("trailTime").textContent = formatMin(trailMin) + (phase == "down" ? " to trailhead" : " to the top");
 
-    const sunsetPill = document.getElementById("sunsetTime");
+    sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin) + " until sunset" : "Sunset passed";
     sunsetPill.textContent = sunsetMin > 0 ? formatMin(sunsetMin): "Sunset passed";
     sunsetPill.classList.toggle("warn", trailMin > sunsetMin - 30);
 }
@@ -609,6 +609,11 @@ function hideRestPopup(){
 function onTrashClean() {
     console.log("Trash Button pressed.")
     hideRestPopup();
+}
+
+function takeTrashPhoto() {
+    showRestPopup();
+    openCamera();
 }
 
 function openCamera() {

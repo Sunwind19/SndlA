@@ -42,13 +42,18 @@
                 <div id = "cardNote"></div>
             </div>
         </div>
-        <div class = "cardPills">
-            <span id = "sunsetTime" class = "sunsetTime">~40 min</span>
-            <span id = "trailTime" class = "trailTime">~70 mins</span>
+        <div class = "cardBottom">
+            <div class = "cardPills">
+                <span id = "sunsetTime" class = "sunsetTime">~40 min</span>
+                <span id = "trailTime" class = "trailTime">~70 mins</span>
+            </div>
+            <div class = "cardActions">
+                <button id = "photoBtn" onclick = "takeTrashPhoto()">&#128247; Trash photo</button>
+                <button id = "finishBtn" onclick = "openRecap()">Finish hike</button>
+            </div>
         </div>
         <button id = "prevBtn" class = "navBtn" onclick = "prevStep()">&lt;</button>
         <button id = "nextBtn" class = "navBtn" onclick = "nextStep()">&gt;</button>
-        <button id = "finishBtn" onclick = "openRecap()">Finish hike</button>
         <div id = "keymap">
             <div id = "keySpace"><b>Space</b> Pause</div>
             <div><b>A</b> Skip to summit</div>

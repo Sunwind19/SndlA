@@ -83,11 +83,18 @@ body {margin: 0;}
 .pill.green { background: #43a047; color: #fff;}
 .pill.black { background: #000; color: #fff;}
 
-.sunsetTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #fbe38e; color: #b08d2a; }
+.sunsetTime { min-width: 170px; text-align: center; padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #fbe38e; color: #b08d2a; }
 .trailTime { padding: 8px 16px; border-radius: 20px; font-size: 14px; background: #000; color: #fff; }
 .sunsetTime.warn { background: #f3c0b6; color: #a8402f; }
 
-.cardPills { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 2; }
+.cardBottom {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 10px; margin-top: 28px; padding: 0 36px; position: relative; z-index: 2;
+}
+.cardPills { display: flex; flex-wrap: wrap; gap: 8px; }
+.cardActions { display: flex; gap: 8px; margin-left: auto; }
+.cardBottom span, .cardBottom button { white-space: nowrap; }
+@media (max-width: 600px) { .cardBottom { padding: 0; } }
 .navBtn {
     display: none;
     position: absolute; top: 50%; transform: translateY(-50%);
@@ -163,11 +170,12 @@ body {margin: 0;}
     font-size: 16px; cursor: pointer;
 }
 
-#finishBtn {
-    display: none; position: absolute; right: 16px; bottom: 16px; z-index: 3;
-    padding: 10px 18px; border-radius: 24px; border: none;
-    background: #43a047; color: #fff; cursor: pointer;
+#finishBtn, #photoBtn {
+    padding: 10px 18px; border-radius: 24px; font-size: 15px; cursor: pointer;
+    font-family: inherit;
 }
+#finishBtn { border: 2px solid #43a047; background: #43a047; color: #fff; }
+#photoBtn { border: 2px solid #43a047; background: #fff; color: #43a047; }
 
 #keymap {
     display: none; position: absolute; right: 8px; bottom: 100%; margin-bottom: 10px;
@@ -203,10 +211,3 @@ body {margin: 0;}
 .recapThanks { font-size: 18px; margin-top: 10px; }
 #recapPhoto { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 28px; }
 #recapClose { padding: 14px; border-radius: 28px; border: 2px solid #43a047; background: #fff; font-size: 16px; cursor: pointer; }
-
-/* Finish button */
-#finishBtn {
-    display: none; position: absolute; right: 16px; bottom: 16px; z-index: 3;
-    padding: 10px 18px; border-radius: 24px; border: none;
-    background: #43a047; color: #fff; font-size: 15px; cursor: pointer;
-}
