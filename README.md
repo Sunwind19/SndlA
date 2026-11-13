@@ -3,7 +3,8 @@
 # SNDL_A
 
 ## What is SNDL A in one sentence?
-Ever had a experience "what that is" when hiking, or walking in the park, but never getting any explanation? Ever had spotted piece of wastes in the middle of beautiful mountain? Using SndlA, you can get meaningful experience as the app guides you through the famous viewpoints, while being mountain protector yourself by taking picture of waste when you take a rest! I developed this web-app because as person living in an island with 80+ small mountains, mountain waste problems are really serious in my local...and only 4% of total is being collected by the government. Thus, mapping out location of waste would be first step to establish more efficient system (which I am planning to connect with biomimetic robot I am building)
+**WHAT** Ever had a experience "what that is" when hiking, or walking in the park, but never getting any explanation? Ever had spotted piece of wastes in the middle of beautiful mountain? Using SndlA, you can get meaningful experience as the app guides you through the famous viewpoints, while being mountain protector yourself by taking picture of waste when you take a rest! 
+**WHY** I developed this web-app because as person living in an island with 80+ small mountains, mountain waste problems are really serious in my local...and only 4% of total is being collected by the government. Thus, mapping out location of waste would be first step to establish more efficient system (which I am planning to connect with biomimetic robot I am building)
 
 ## What does it do? & Screenshots
 
@@ -25,13 +26,37 @@ Ever had a experience "what that is" when hiking, or walking in the park, but ne
 6. **Recap:** At the end of the hike you see your distance, time, impact, and ranking in terms of saved plants and animals. 
 <img width="1424" height="693" alt="Screenshot 2026-11-14 at 5 57 21 AM" src="https://github.com/user-attachments/assets/348fdee4-4705-48d5-8c05-a9c745686279" />
 
-## Full Demo Video
+## Full Demo Video (CLICK THE IMAGE --> LINKS TO VIDEO)
 [![SNDL_A demo](https://img.youtube.com/vi/ruFrol7PC0U/maxresdefault.jpg)](https://www.youtube.com/watch?v=ruFrol7PC0U)
 
-## Why do we need SNDL A?
+## Guide for reviewer
+Open the live link and go through the 3 intro slides with the green > button.
+On Select your trail, I recommend choosing <mark>Yosemite demo · Sentinel Dome.</mark> This starts the simulator, so you don't need to be in Yosemite.
+<mark>Keyboard controls (desktop)</mark>
+| Key |	Action |
+| ------------- | ------------- |
+| Space	| Pause / resume walking |
+| A	| Skip to the summit |
+| S | Toggle 30× speed |
+| D	| Open the trash photo popup |
+At the summit, step through the viewpoints with >. After the last one, the simulator walks you back down. Press Finish hike to see the recap.
 
-## Self developed APIs and flow structure
+## Self developed APIs and other services incorperated
+A. Supabase — storage and database
+Storage: trash photos are uploaded to a public bucket (trash-photos).
+Database: each report is a row in the trash_reports table. It holds the location, photo URL, status (pending → done / error), the AI result (JSON), and an anonymous device ID.
 
+B. Hugging Face — hosting the trash detection AI model
+The trash detection model runs as a Gradio app on a Hugging Face Space (Sunwind19/biomelf), where photo taken by user is sent and analyzed.
+
+C. Ultralytics (+ SAHI) — building and training the AI model using Ultralystics YOLO v8 to find 7 kinds of mountain trash (tire, hazardous waste, net, cigarette butt, plastic bottle, can, and plastic bag)
+
+D. Render — deploying the web app
+
+Other data sources:
+OpenStreetMap (© OpenStreetMap contributors, ODbL): map tiles, trail lines, and viewpoints.
+NPS API: park information for the Yosemite demo.
+SunCalc: sunset time for users' location.
 
 
 ## File Structure
@@ -51,7 +76,6 @@ Ever had a experience "what that is" when hiking, or walking in the park, but ne
 | data_generation/  | 	OSM data used to generate trail  |
 | test_codes/  | 	Codes used in order to explore and fetch data from National Park Service  |
 
-## What did I learn
 
 
 
