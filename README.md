@@ -3,7 +3,7 @@
 # SNDL_A
 
 ## What is SNDL A in one sentence?
-Ever had a experience "what that is" when hiking, or walking in the park, but never getting any explanation? Ever had spotted piece of wastes in the middle of beautiful mountain? Using SndlA, you can get meaningful experience as the app guides you through the famous viewpoints, while being mountain protector yourself by taking picture of waste when you take a rest!
+Ever had a experience "what that is" when hiking, or walking in the park, but never getting any explanation? Ever had spotted piece of wastes in the middle of beautiful mountain? Using SndlA, you can get meaningful experience as the app guides you through the famous viewpoints, while being mountain protector yourself by taking picture of waste when you take a rest! I developed this web-app because as person living in an island with 80+ small mountains, mountain waste problems are really serious in my local...and only 4% of total is being collected by the government. Thus, mapping out location of waste would be first step to establish more efficient system (which I am planning to connect with biomimetic robot I am building)
 
 ## What does it do? & Screenshots
 
@@ -25,18 +25,13 @@ Ever had a experience "what that is" when hiking, or walking in the park, but ne
 6. **Recap:** At the end of the hike you see your distance, time, impact, and ranking in terms of saved plants and animals. 
 <img width="1424" height="693" alt="Screenshot 2026-11-14 at 5 57 21 AM" src="https://github.com/user-attachments/assets/348fdee4-4705-48d5-8c05-a9c745686279" />
 
-
-## Screenshots and explanation
-### Full Demo video
-During hiking
-Landing page & Choosing trails
-
-
-### Screen-by-Screen explanation
+## Full Demo Video
+[![SNDL_A demo](https://img.youtube.com/vi/ruFrol7PC0U/maxresdefault.jpg)](https://www.youtube.com/watch?v=ruFrol7PC0U)
 
 ## Why do we need SNDL A?
 
 ## Self developed APIs and flow structure
+
 
 
 ## File Structure
@@ -55,10 +50,6 @@ Landing page & Choosing trails
 | test_photos/  | 	Sample test photos for testing  |
 | data_generation/  | 	OSM data used to generate trail  |
 | test_codes/  | 	Codes used in order to explore and fetch data from National Park Service  |
-
-## Programming Languages
-
-
 
 ## What did I learn
 
